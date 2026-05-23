@@ -93,6 +93,35 @@ def init_database():
         """)
 
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS fixture_stats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fixture_id INTEGER,
+                team_name TEXT,
+                season INTEGER,
+                shots_on_goal INTEGER,
+                shots_off_goal INTEGER,
+                total_shots INTEGER,
+                blocked_shots INTEGER,
+                shots_insidebox INTEGER,
+                shots_outsidebox INTEGER,
+                fouls INTEGER,
+                corners INTEGER,
+                offsides INTEGER,
+                possession REAL,
+                yellow_cards INTEGER,
+                red_cards INTEGER,
+                goalkeeper_saves INTEGER,
+                total_passes INTEGER,
+                accurate_passes INTEGER,
+                pass_accuracy REAL,
+                expected_goals REAL,
+                goals_prevented REAL,
+                fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(fixture_id, team_name)
+            )
+        """)
+
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS team_stats (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 season INTEGER,
@@ -328,6 +357,136 @@ def save_team_stats(conn, data):
         logger.error(f"save team stats failed: {e}")
 
 
+def _normalize_stat_value(value):
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        cleaned = value.strip()
+        if cleaned.endswith("%"):
+            cleaned = cleaned[:-1].strip()
+            if cleaned == "":
+                return None
+            try:
+                return float(cleaned)
+            except ValueError:
+                return None
+
+        try:
+            if "." in cleaned:
+                return float(cleaned)
+            return int(cleaned)
+        except ValueError:
+            return None
+
+    if isinstance(value, (int, float)):
+        return value
+
+    return None
+
+
+def _find_stat(stats_list, types):
+    for stat in stats_list:
+        if not isinstance(stat, dict):
+            continue
+        stat_type = stat.get("type")
+        if stat_type in types:
+            return stat.get("value")
+    return None
+
+
+def fetch_fixture_stats(fixture_id: int):
+    # ROCKY: get per-fixture advanced stats from the API
+    url = f"{BASE_URL}/fixtures/statistics?fixture={fixture_id}"
+    return fetch_with_retry(url)
+
+
+def save_fixture_stats(conn, data, fixture_id):
+    # ROCKY: store stats for both teams in the fixture_stats table
+    try:
+        cursor = conn.cursor()
+        responses = data.get("response") or []
+
+        for item in responses:
+            stats = item.get("statistics") or []
+            team = item.get("team") or item.get("teams") or {}
+            team_name = team.get("name") if isinstance(team, dict) else None
+            if not team_name:
+                # fallback to nested keys if API changes slightly
+                team_name = item.get("team_name") or item.get("teamName")
+
+            cursor.execute("""
+                INSERT OR REPLACE INTO fixture_stats 
+                (fixture_id, team_name, season, shots_on_goal, shots_off_goal, total_shots,
+                 blocked_shots, shots_insidebox, shots_outsidebox, fouls, corners,
+                 offsides, possession, yellow_cards, red_cards, goalkeeper_saves,
+                 total_passes, accurate_passes, pass_accuracy, expected_goals,
+                 goals_prevented)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                fixture_id,
+                team_name,
+                SEASON,
+                _normalize_stat_value(_find_stat(stats, ["Shots on Goal"])),
+                _normalize_stat_value(_find_stat(stats, ["Shots off Goal"])),
+                _normalize_stat_value(_find_stat(stats, ["Total Shots"])),
+                _normalize_stat_value(_find_stat(stats, ["Blocked Shots"])),
+                _normalize_stat_value(_find_stat(stats, ["Shots insidebox", "Shots inside box", "Shots Insidebox"])),
+                _normalize_stat_value(_find_stat(stats, ["Shots outsidebox", "Shots outside box", "Shots Outsidebox"])),
+                _normalize_stat_value(_find_stat(stats, ["Fouls"])),
+                _normalize_stat_value(_find_stat(stats, ["Corners", "Corner Kicks"])),
+                _normalize_stat_value(_find_stat(stats, ["Offsides", "Offside"])),
+                _normalize_stat_value(_find_stat(stats, ["Possession", "Ball Possession"])),
+                _normalize_stat_value(_find_stat(stats, ["Yellow Cards"])),
+                _normalize_stat_value(_find_stat(stats, ["Red Cards"])),
+                _normalize_stat_value(_find_stat(stats, ["Saves", "Goalkeeper Saves", "GK Saves"])),
+                _normalize_stat_value(_find_stat(stats, ["Total passes", "Passes", "Passes total"])),
+                _normalize_stat_value(_find_stat(stats, ["Accurate passes", "Passes accurate", "Accurate Passes"])),
+                _normalize_stat_value(_find_stat(stats, ["Pass Accuracy", "Pass accuracy", "Pass Accuracy %"])),
+                _normalize_stat_value(_find_stat(stats, ["Expected goals", "xG", "Expected Goals"])),
+                _normalize_stat_value(_find_stat(stats, ["Goals Prevented", "Goals prevented", "Goals prevented by keeper"])),
+            ))
+
+        conn.commit()
+        logger.info(f"saved fixture stats for fixture {fixture_id}")
+    except Exception as e:
+        logger.error(f"save fixture stats failed: {e}")
+
+
+def fetch_all_fixture_stats(conn):
+    # ROCKY: only fetch missing fixture stats and stay under API free limit
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT fixture_id FROM fixtures")
+    all_fixture_ids = [row[0] for row in cursor.fetchall()]
+
+    cursor.execute("SELECT DISTINCT fixture_id FROM fixture_stats")
+    saved_fixture_ids = {row[0] for row in cursor.fetchall()}
+
+    missing_fixture_ids = [fid for fid in all_fixture_ids if fid not in saved_fixture_ids]
+    total_missing = len(missing_fixture_ids)
+    logger.info(f"{total_missing} missing fixtures need stats")
+
+    successful_calls = 0
+    for index, fixture_id in enumerate(missing_fixture_ids, start=1):
+        if successful_calls >= 90:
+            logger.info("reached 90 successful fixture stats fetches, stopping")
+            break
+
+        print(f"fetching {index}/{total_missing}")
+        logger.info(f"fetching fixture stats {index}/{total_missing} for fixture {fixture_id}")
+
+        data = fetch_fixture_stats(fixture_id)
+        if data and data.get("response"):
+            save_fixture_stats(conn, data, fixture_id)
+            successful_calls += 1
+        else:
+            logger.warning(f"no stats data returned for fixture {fixture_id}")
+
+        time.sleep(1)
+
+    logger.info(f"fixture stats fetch completed: {successful_calls} successful calls")
+
+
 def main():
     logger.info("=" * 50)
     logger.info(f"fetching PL data for season {SEASON}")
@@ -357,6 +516,9 @@ def main():
         fixtures_data = fetch_fixtures()
         if fixtures_data:
             save_fixtures(conn, fixtures_data)
+
+        logger.info("fetching missing fixture stats...")
+        fetch_all_fixture_stats(conn)
 
         # ROCKY: team stats disabled by default. uses too many API calls (20 teams = 20 calls)
         # to enable: add FETCH_TEAM_STATS=true in your .env file

@@ -2,6 +2,8 @@ import sqlite3
 import pandas as pd
 import chromadb
 from chromadb.utils import embedding_functions
+from dotenv import load_dotenv
+load_dotenv()
 
 # ROCKY: connect to your sqlite database
 conn = sqlite3.connect("pl_data.db")
@@ -35,11 +37,11 @@ def chunk_standings():
         # ROCKY: convert each row to human readable sentence
         # this what AI will read to answer your questions
         text = (
-            f"{row['team_name']} are ranked {row['rank']} in the Premier League "
+            f"STANDINGS - {row['team_name']} ranked {row['rank']} in Premier League "
             f"with {row['points']} points from {row['played']} games. "
-            f"They have {row['won']} wins, {row['drawn']} draws, {row['lost']} losses. "
-            f"Goals for: {row['goals_for']}, Goals against: {row['goals_against']}, "
-            f"Goal difference: {row['goal_difference']}."
+            f"Record: {row['won']}W-{row['drawn']}D-{row['lost']}L. "
+            f"Goals: {row['goals_for']} for, {row['goals_against']} against, "
+            f"difference: {row['goal_difference']}."
         )
         chunks.append(text)
         ids.append(f"standing_{i}_{row['team_name'].replace(' ', '_')}")
@@ -55,9 +57,8 @@ def chunk_scorers():
     
     for i, row in df.iterrows():
         text = (
-            f"{row['player_name']} plays for {row['team_name']} "
-            f"and has scored {row['goals']} goals "
-            f"with {row['assists']} assists in the {row['season']} Premier League season."
+            f"TOP SCORER - {row['player_name']} ({row['team_name']}): "
+            f"{row['goals']} goals, {row['assists']} assists in {row['season']} season."
         )
         chunks.append(text)
         ids.append(f"scorer_{row['season']}_{row['player_name'].replace(' ', '_')}")
@@ -73,7 +74,7 @@ def chunk_fixtures():
     
     for i, row in df.iterrows():
         text = (
-            f"{row['home_team']} vs {row['away_team']} "
+            f"FIXTURE - {row['home_team']} vs {row['away_team']} "
             f"ended {row['home_goals']}-{row['away_goals']} "
             f"({row['status']}) on {row['fixture_date'][:10]}."
         )
@@ -82,18 +83,93 @@ def chunk_fixtures():
     
     return chunks, ids
 
-def store_in_chromadb(chunks, ids, label):
-        collection.upsert(
-        documents=chunks,
-        ids=ids)
-        print(f"stored {len(chunks)} {label} chunks in chromadb")
+def chunk_fixture_stats():
+    # ROCKY: advanced stats for each team in each fixture
+    df = pd.read_sql("SELECT * FROM fixture_stats", conn)
     
+    chunks = []
+    ids = []
+    
+    for i, row in df.iterrows():
+        text = (
+            f"In the match with fixture_id {row['fixture_id']}, {row['team_name']} "
+            f"had {row['total_shots']} total shots, {row['shots_on_goal']} on target, "
+            f"xG of {row['expected_goals']}, {row['possession']}% possession and "
+            f"{row['accurate_passes']} accurate passes out of {row['total_passes']}."
+        )
+        chunks.append(text)
+        ids.append(f"fixture_stats_{row['fixture_id']}_{row['team_name'].replace(' ', '_')}")
+    
+    return chunks, ids
+
+def chunk_match_xg():
+    # ROCKY: convert match xG data to human readable sentences
+    # xG = expected goals, shows quality of chances created
+    df = pd.read_sql("SELECT * FROM match_xg ORDER BY match_date DESC", conn)
+    
+    chunks = []
+    ids = []
+    
+    for i, row in df.iterrows():
+        # ROCKY: handle missing values gracefully
+        home_xg = f"{row['home_xg']:.2f}" if row['home_xg'] else "N/A"
+        away_xg = f"{row['away_xg']:.2f}" if row['away_xg'] else "N/A"
+        home_goals = row['home_goals'] if row['home_goals'] is not None else "?"
+        away_goals = row['away_goals'] if row['away_goals'] is not None else "?"
+        
+        # ROCKY: safely handle None team names
+        home = str(row['home_team'] or 'unknown').replace(' ', '_')
+        away = str(row['away_team'] or 'unknown').replace(' ', '_')
+        
+        text = (
+            f"On {row['match_date']}, {row['home_team']} played {row['away_team']}. "
+            f"The match ended {home_goals}-{away_goals}. "
+            f"{row['home_team']} had an expected goals (xG) of {home_xg} and "
+            f"{row['away_team']} had an xG of {away_xg}."
+        )
+        chunks.append(text)
+        ids.append(f"match_xg_{row['match_date']}_{home}_vs_{away}")
+    
+    return chunks, ids
+
+def chunk_player_xg():
+    # ROCKY: convert player xG stats to readable sentences
+    # individual player performance metrics including xG, xA, positions
+    df = pd.read_sql("SELECT * FROM player_xg ORDER BY xg DESC", conn)
+    
+    chunks = []
+    ids = []
+    
+    for i, row in df.iterrows():
+        # ROCKY: handle missing/null values
+        position = row['position'] if row['position'] else "Unknown"
+        xg = f"{row['xg']:.2f}" if row['xg'] else "0.0"
+        xa = f"{row['xa']:.2f}" if row['xa'] else "0.0"
+        npxg = f"{row['npxg']:.2f}" if row['npxg'] else "0.0"
+        
+        # ROCKY: safely handle None player/team names
+        player = str(row['player_name'] or 'unknown').replace(' ', '_')
+        team = str(row['team_name'] or 'unknown').replace(' ', '_')
+        
+        # ROCKY: explicit compact format with full name at start for easy matching
+        text = (
+            f"PLAYER STATS - {row['player_name']} ({row['team_name']}, {position}): "
+            f"{row['goals']} goals, {row['assists']} assists, xG: {xg}, xA: {xa}, "
+            f"npxG: {npxg}, shots: {row['shots']}, key passes: {row['key_passes']}, "
+            f"minutes: {row['minutes']} in {row['games']} games."
+        )
+        chunks.append(text)
+        ids.append(f"player_xg_{player}_{team}")
+    
+    return chunks, ids
+
+def store_in_chromadb(chunks, ids, label):
     # ROCKY: add all chunks to chromadb
     # this is where text gets converted to embeddings and stored
-        collection.add(
+    collection.add(
         documents=chunks,
         ids=ids)
-        print(f"stored {len(chunks)} {label} chunks in chromadb")
+    print(f"stored {len(chunks)} {label} chunks in chromadb")
 
 def main():
     print("building RAG knowledge base...")
@@ -102,13 +178,21 @@ def main():
     chunks, ids = chunk_standings()
     store_in_chromadb(chunks, ids, "standings")
     
-    print("processing scorers...")
-    chunks, ids = chunk_scorers()
-    store_in_chromadb(chunks, ids, "scorers")
-    
     print("processing fixtures...")
     chunks, ids = chunk_fixtures()
     store_in_chromadb(chunks, ids, "fixtures")
+    
+    print("processing fixture stats...")
+    chunks, ids = chunk_fixture_stats()
+    store_in_chromadb(chunks, ids, "fixture_stats")
+    
+    print("processing match xG...")
+    chunks, ids = chunk_match_xg()
+    store_in_chromadb(chunks, ids, "match_xg")
+    
+    print("processing player xG...")
+    chunks, ids = chunk_player_xg()
+    store_in_chromadb(chunks, ids, "player_xg")
     
     print("done. knowledge base ready.")
     
