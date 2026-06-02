@@ -2014,3 +2014,348 @@
 2026-05-13 11:00:04,772 - INFO - reached 90 successful fixture stats fetches, stopping
 2026-05-13 11:00:04,772 - INFO - fixture stats fetch completed: 90 successful calls
 2026-05-13 11:00:04,773 - INFO - ALL DONE. data saved to pl_data.db
+2026-06-01 16:23:12,528 - INFO - ==================================================
+2026-06-01 16:23:12,614 - INFO - fetching PL data for season 2024
+2026-06-01 16:23:12,615 - INFO - ==================================================
+2026-06-01 16:23:12,615 - INFO - database ready for season 2024
+2026-06-01 16:23:12,615 - INFO - fetching standings...
+2026-06-01 16:23:12,990 - INFO - fetch success
+2026-06-01 16:23:13,301 - INFO - saved 20 teams to standings
+2026-06-01 16:23:13,301 - INFO - fetching top scorers...
+2026-06-01 16:23:13,618 - INFO - fetch success
+2026-06-01 16:23:14,000 - INFO - saved 19 scorers
+2026-06-01 16:23:14,000 - INFO - fetching fixtures...
+2026-06-01 16:23:14,591 - INFO - fetch success
+2026-06-01 16:23:15,367 - INFO - saved 380 fixtures
+2026-06-01 16:23:15,367 - INFO - fetching missing fixture stats...
+2026-06-01 16:23:15,368 - INFO - 110 missing fixtures need stats
+2026-06-01 16:23:15,368 - INFO - fetching fixture stats 1/110 for fixture 1208144
+2026-06-01 16:23:15,677 - INFO - fetch success
+2026-06-01 16:23:16,784 - INFO - saved fixture stats for fixture 1208144
+2026-06-01 16:23:17,784 - INFO - fetching fixture stats 2/110 for fixture 1208145
+2026-06-01 16:23:18,101 - INFO - fetch success
+2026-06-01 16:23:18,193 - INFO - saved fixture stats for fixture 1208145
+2026-06-01 16:23:19,194 - INFO - fetching fixture stats 3/110 for fixture 1208146
+2026-06-01 16:23:19,486 - INFO - fetch success
+2026-06-01 16:23:19,981 - INFO - saved fixture stats for fixture 1208146
+2026-06-01 16:23:20,982 - INFO - fetching fixture stats 4/110 for fixture 1208147
+2026-06-01 16:23:21,307 - INFO - fetch success
+2026-06-01 16:23:22,865 - INFO - saved fixture stats for fixture 1208147
+2026-06-01 16:23:23,865 - INFO - fetching fixture stats 5/110 for fixture 1208201
+2026-06-01 16:23:24,180 - INFO - fetch success
+2026-06-01 16:23:24,959 - INFO - saved fixture stats for fixture 1208201
+2026-06-01 16:23:25,959 - INFO - fetching fixture stats 6/110 for fixture 1208202
+2026-06-01 16:23:26,270 - INFO - fetch success
+2026-06-01 16:23:26,448 - INFO - saved fixture stats for fixture 1208202
+2026-06-01 16:23:27,449 - INFO - fetching fixture stats 7/110 for fixture 1208203
+2026-06-01 16:23:27,751 - INFO - fetch success
+2026-06-01 16:23:27,976 - INFO - saved fixture stats for fixture 1208203
+2026-06-01 16:23:28,976 - INFO - fetching fixture stats 8/110 for fixture 1208204
+2026-06-01 16:23:29,022 - WARNING - rate limited. waiting 1s...
+2026-06-01 16:23:30,070 - WARNING - rate limited. waiting 2s...
+2026-06-01 16:23:32,120 - WARNING - rate limited. waiting 4s...
+2026-06-01 16:23:36,167 - WARNING - rate limited. waiting 8s...
+2026-06-01 16:23:44,217 - WARNING - rate limited. waiting 16s...
+2026-06-01 16:24:00,519 - INFO - fetch success
+2026-06-01 16:24:00,586 - INFO - saved fixture stats for fixture 1208204
+2026-06-01 16:24:01,587 - INFO - fetching fixture stats 9/110 for fixture 1208205
+2026-06-01 16:24:01,891 - INFO - fetch success
+2026-06-01 16:24:01,951 - INFO - saved fixture stats for fixture 1208205
+2026-06-01 16:24:02,952 - INFO - fetching fixture stats 10/110 for fixture 1208206
+2026-06-01 16:24:03,265 - INFO - fetch success
+2026-06-01 16:24:03,330 - INFO - saved fixture stats for fixture 1208206
+2026-06-01 16:24:04,331 - INFO - fetching fixture stats 11/110 for fixture 1208207
+2026-06-01 16:24:04,626 - INFO - fetch success
+2026-06-01 16:24:04,708 - INFO - saved fixture stats for fixture 1208207
+2026-06-01 16:24:05,709 - INFO - fetching fixture stats 12/110 for fixture 1208208
+2026-06-01 16:24:06,015 - INFO - fetch success
+2026-06-01 16:24:06,098 - INFO - saved fixture stats for fixture 1208208
+2026-06-01 16:24:07,098 - INFO - fetching fixture stats 13/110 for fixture 1208209
+2026-06-01 16:24:07,399 - INFO - fetch success
+2026-06-01 16:24:08,284 - INFO - saved fixture stats for fixture 1208209
+2026-06-01 16:24:09,285 - INFO - fetching fixture stats 14/110 for fixture 1208230
+2026-06-01 16:24:09,589 - INFO - fetch success
+2026-06-01 16:24:09,837 - INFO - saved fixture stats for fixture 1208230
+2026-06-01 16:24:10,838 - INFO - fetching fixture stats 15/110 for fixture 1208231
+2026-06-01 16:24:11,140 - INFO - fetch success
+2026-06-01 16:24:11,220 - INFO - saved fixture stats for fixture 1208231
+2026-06-01 16:24:12,221 - INFO - fetching fixture stats 16/110 for fixture 1208232
+2026-06-01 16:24:12,534 - INFO - fetch success
+2026-06-01 16:24:12,599 - INFO - saved fixture stats for fixture 1208232
+2026-06-01 16:24:13,599 - INFO - fetching fixture stats 17/110 for fixture 1208233
+2026-06-01 16:24:13,905 - INFO - fetch success
+2026-06-01 16:24:13,965 - INFO - saved fixture stats for fixture 1208233
+2026-06-01 16:24:14,966 - INFO - fetching fixture stats 18/110 for fixture 1208244
+2026-06-01 16:24:15,013 - WARNING - rate limited. waiting 1s...
+2026-06-01 16:24:16,060 - WARNING - rate limited. waiting 2s...
+2026-06-01 16:24:18,113 - WARNING - rate limited. waiting 4s...
+2026-06-01 16:24:22,161 - WARNING - rate limited. waiting 8s...
+2026-06-01 16:24:30,210 - WARNING - rate limited. waiting 16s...
+2026-06-01 16:24:46,516 - INFO - fetch success
+2026-06-01 16:24:46,517 - WARNING - no stats data returned for fixture 1208244
+2026-06-01 16:24:47,518 - INFO - fetching fixture stats 19/110 for fixture 1208245
+2026-06-01 16:24:47,822 - INFO - fetch success
+2026-06-01 16:24:47,823 - WARNING - no stats data returned for fixture 1208245
+2026-06-01 16:24:48,824 - INFO - fetching fixture stats 20/110 for fixture 1208246
+2026-06-01 16:24:49,120 - INFO - fetch success
+2026-06-01 16:24:49,121 - WARNING - no stats data returned for fixture 1208246
+2026-06-01 16:24:50,122 - INFO - fetching fixture stats 21/110 for fixture 1208247
+2026-06-01 16:24:50,422 - INFO - fetch success
+2026-06-01 16:24:50,424 - WARNING - no stats data returned for fixture 1208247
+2026-06-01 16:24:51,424 - INFO - fetching fixture stats 22/110 for fixture 1208248
+2026-06-01 16:24:51,740 - INFO - fetch success
+2026-06-01 16:24:51,741 - WARNING - no stats data returned for fixture 1208248
+2026-06-01 16:24:52,742 - INFO - fetching fixture stats 23/110 for fixture 1208249
+2026-06-01 16:24:53,055 - INFO - fetch success
+2026-06-01 16:24:53,056 - WARNING - no stats data returned for fixture 1208249
+2026-06-01 16:24:54,057 - INFO - fetching fixture stats 24/110 for fixture 1208270
+2026-06-01 16:24:54,358 - INFO - fetch success
+2026-06-01 16:24:54,360 - WARNING - no stats data returned for fixture 1208270
+2026-06-01 16:24:55,360 - INFO - fetching fixture stats 25/110 for fixture 1208271
+2026-06-01 16:24:55,663 - INFO - fetch success
+2026-06-01 16:24:55,664 - WARNING - no stats data returned for fixture 1208271
+2026-06-01 16:24:56,665 - INFO - fetching fixture stats 26/110 for fixture 1208272
+2026-06-01 16:24:56,966 - INFO - fetch success
+2026-06-01 16:24:56,968 - WARNING - no stats data returned for fixture 1208272
+2026-06-01 16:24:57,968 - INFO - fetching fixture stats 27/110 for fixture 1208273
+2026-06-01 16:24:58,262 - INFO - fetch success
+2026-06-01 16:24:58,264 - WARNING - no stats data returned for fixture 1208273
+2026-06-01 16:24:59,265 - INFO - fetching fixture stats 28/110 for fixture 1208274
+2026-06-01 16:24:59,574 - INFO - fetch success
+2026-06-01 16:24:59,575 - WARNING - no stats data returned for fixture 1208274
+2026-06-01 16:25:00,575 - INFO - fetching fixture stats 29/110 for fixture 1208275
+2026-06-01 16:25:00,878 - INFO - fetch success
+2026-06-01 16:25:00,939 - INFO - saved fixture stats for fixture 1208275
+2026-06-01 16:25:01,940 - INFO - fetching fixture stats 30/110 for fixture 1208276
+2026-06-01 16:25:02,259 - INFO - fetch success
+2026-06-01 16:25:02,334 - INFO - saved fixture stats for fixture 1208276
+2026-06-01 16:25:03,334 - INFO - fetching fixture stats 31/110 for fixture 1208287
+2026-06-01 16:25:03,659 - INFO - fetch success
+2026-06-01 16:25:03,723 - INFO - saved fixture stats for fixture 1208287
+2026-06-01 16:25:04,724 - INFO - fetching fixture stats 32/110 for fixture 1208288
+2026-06-01 16:25:05,021 - INFO - fetch success
+2026-06-01 16:25:05,079 - INFO - saved fixture stats for fixture 1208288
+2026-06-01 16:25:06,080 - INFO - fetching fixture stats 33/110 for fixture 1208289
+2026-06-01 16:25:06,400 - INFO - fetch success
+2026-06-01 16:25:06,469 - INFO - saved fixture stats for fixture 1208289
+2026-06-01 16:25:07,469 - INFO - fetching fixture stats 34/110 for fixture 1208310
+2026-06-01 16:25:07,791 - INFO - fetch success
+2026-06-01 16:25:07,858 - INFO - saved fixture stats for fixture 1208310
+2026-06-01 16:25:08,858 - INFO - fetching fixture stats 35/110 for fixture 1208311
+2026-06-01 16:25:09,181 - INFO - fetch success
+2026-06-01 16:25:09,245 - INFO - saved fixture stats for fixture 1208311
+2026-06-01 16:25:10,245 - INFO - fetching fixture stats 36/110 for fixture 1208312
+2026-06-01 16:25:10,550 - INFO - fetch success
+2026-06-01 16:25:10,612 - INFO - saved fixture stats for fixture 1208312
+2026-06-01 16:25:11,613 - INFO - fetching fixture stats 37/110 for fixture 1208313
+2026-06-01 16:25:11,916 - INFO - fetch success
+2026-06-01 16:25:11,978 - INFO - saved fixture stats for fixture 1208313
+2026-06-01 16:25:12,978 - INFO - fetching fixture stats 38/110 for fixture 1208314
+2026-06-01 16:25:13,292 - INFO - fetch success
+2026-06-01 16:25:13,356 - INFO - saved fixture stats for fixture 1208314
+2026-06-01 16:25:14,357 - INFO - fetching fixture stats 39/110 for fixture 1208315
+2026-06-01 16:25:14,413 - WARNING - rate limited. waiting 1s...
+2026-06-01 16:25:15,463 - WARNING - rate limited. waiting 2s...
+2026-06-01 16:25:17,505 - WARNING - rate limited. waiting 4s...
+2026-06-01 16:25:21,555 - WARNING - rate limited. waiting 8s...
+2026-06-01 16:25:29,602 - WARNING - rate limited. waiting 16s...
+2026-06-01 16:25:45,906 - INFO - fetch success
+2026-06-01 16:25:45,907 - WARNING - no stats data returned for fixture 1208315
+2026-06-01 16:25:46,908 - INFO - fetching fixture stats 40/110 for fixture 1208316
+2026-06-01 16:25:47,202 - INFO - fetch success
+2026-06-01 16:25:47,204 - WARNING - no stats data returned for fixture 1208316
+2026-06-01 16:25:48,204 - INFO - fetching fixture stats 41/110 for fixture 1208317
+2026-06-01 16:25:48,519 - INFO - fetch success
+2026-06-01 16:25:48,521 - WARNING - no stats data returned for fixture 1208317
+2026-06-01 16:25:49,521 - INFO - fetching fixture stats 42/110 for fixture 1208318
+2026-06-01 16:25:49,831 - INFO - fetch success
+2026-06-01 16:25:49,832 - WARNING - no stats data returned for fixture 1208318
+2026-06-01 16:25:50,833 - INFO - fetching fixture stats 43/110 for fixture 1208322
+2026-06-01 16:25:51,133 - INFO - fetch success
+2026-06-01 16:25:51,135 - WARNING - no stats data returned for fixture 1208322
+2026-06-01 16:25:52,135 - INFO - fetching fixture stats 44/110 for fixture 1208323
+2026-06-01 16:25:52,463 - INFO - fetch success
+2026-06-01 16:25:52,464 - WARNING - no stats data returned for fixture 1208323
+2026-06-01 16:25:53,464 - INFO - fetching fixture stats 45/110 for fixture 1208334
+2026-06-01 16:25:53,768 - INFO - fetch success
+2026-06-01 16:25:53,770 - WARNING - no stats data returned for fixture 1208334
+2026-06-01 16:25:54,770 - INFO - fetching fixture stats 46/110 for fixture 1208335
+2026-06-01 16:25:55,088 - INFO - fetch success
+2026-06-01 16:25:55,089 - WARNING - no stats data returned for fixture 1208335
+2026-06-01 16:25:56,090 - INFO - fetching fixture stats 47/110 for fixture 1208336
+2026-06-01 16:25:56,390 - INFO - fetch success
+2026-06-01 16:25:56,391 - WARNING - no stats data returned for fixture 1208336
+2026-06-01 16:25:57,392 - INFO - fetching fixture stats 48/110 for fixture 1208337
+2026-06-01 16:25:57,708 - INFO - fetch success
+2026-06-01 16:25:57,710 - WARNING - no stats data returned for fixture 1208337
+2026-06-01 16:25:58,710 - INFO - fetching fixture stats 49/110 for fixture 1208338
+2026-06-01 16:25:59,006 - INFO - fetch success
+2026-06-01 16:25:59,008 - WARNING - no stats data returned for fixture 1208338
+2026-06-01 16:26:00,008 - INFO - fetching fixture stats 50/110 for fixture 1208339
+2026-06-01 16:26:00,306 - INFO - fetch success
+2026-06-01 16:26:01,070 - INFO - saved fixture stats for fixture 1208339
+2026-06-01 16:26:02,070 - INFO - fetching fixture stats 51/110 for fixture 1208340
+2026-06-01 16:26:02,385 - INFO - fetch success
+2026-06-01 16:26:02,476 - INFO - saved fixture stats for fixture 1208340
+2026-06-01 16:26:03,476 - INFO - fetching fixture stats 52/110 for fixture 1208341
+2026-06-01 16:26:04,853 - INFO - fetch success
+2026-06-01 16:26:04,915 - INFO - saved fixture stats for fixture 1208341
+2026-06-01 16:26:05,916 - INFO - fetching fixture stats 53/110 for fixture 1208342
+2026-06-01 16:26:06,234 - INFO - fetch success
+2026-06-01 16:26:06,292 - INFO - saved fixture stats for fixture 1208342
+2026-06-01 16:26:07,293 - INFO - fetching fixture stats 54/110 for fixture 1208343
+2026-06-01 16:26:07,600 - INFO - fetch success
+2026-06-01 16:26:07,659 - INFO - saved fixture stats for fixture 1208343
+2026-06-01 16:26:08,660 - INFO - fetching fixture stats 55/110 for fixture 1208344
+2026-06-01 16:26:08,985 - INFO - fetch success
+2026-06-01 16:26:09,078 - INFO - saved fixture stats for fixture 1208344
+2026-06-01 16:26:10,079 - INFO - fetching fixture stats 56/110 for fixture 1208348
+2026-06-01 16:26:10,372 - INFO - fetch success
+2026-06-01 16:26:10,434 - INFO - saved fixture stats for fixture 1208348
+2026-06-01 16:26:11,435 - INFO - fetching fixture stats 57/110 for fixture 1208349
+2026-06-01 16:26:11,752 - INFO - fetch success
+2026-06-01 16:26:11,812 - INFO - saved fixture stats for fixture 1208349
+2026-06-01 16:26:12,813 - INFO - fetching fixture stats 58/110 for fixture 1208350
+2026-06-01 16:26:13,132 - INFO - fetch success
+2026-06-01 16:26:13,192 - INFO - saved fixture stats for fixture 1208350
+2026-06-01 16:26:14,192 - INFO - fetching fixture stats 59/110 for fixture 1208351
+2026-06-01 16:26:14,485 - INFO - fetch success
+2026-06-01 16:26:14,547 - INFO - saved fixture stats for fixture 1208351
+2026-06-01 16:26:15,547 - INFO - fetching fixture stats 60/110 for fixture 1208352
+2026-06-01 16:26:15,592 - WARNING - rate limited. waiting 1s...
+2026-06-01 16:26:16,644 - WARNING - rate limited. waiting 2s...
+2026-06-01 16:26:18,745 - WARNING - rate limited. waiting 4s...
+2026-06-01 16:26:22,793 - WARNING - rate limited. waiting 8s...
+2026-06-01 16:26:30,845 - WARNING - rate limited. waiting 16s...
+2026-06-01 16:26:47,159 - INFO - fetch success
+2026-06-01 16:26:47,160 - WARNING - no stats data returned for fixture 1208352
+2026-06-01 16:26:48,161 - INFO - fetching fixture stats 61/110 for fixture 1208353
+2026-06-01 16:26:48,461 - INFO - fetch success
+2026-06-01 16:26:48,462 - WARNING - no stats data returned for fixture 1208353
+2026-06-01 16:26:49,463 - INFO - fetching fixture stats 62/110 for fixture 1208354
+2026-06-01 16:26:49,774 - INFO - fetch success
+2026-06-01 16:26:49,776 - WARNING - no stats data returned for fixture 1208354
+2026-06-01 16:26:50,776 - INFO - fetching fixture stats 63/110 for fixture 1208355
+2026-06-01 16:26:51,101 - INFO - fetch success
+2026-06-01 16:26:51,102 - WARNING - no stats data returned for fixture 1208355
+2026-06-01 16:26:52,103 - INFO - fetching fixture stats 64/110 for fixture 1208356
+2026-06-01 16:26:52,414 - INFO - fetch success
+2026-06-01 16:26:52,415 - WARNING - no stats data returned for fixture 1208356
+2026-06-01 16:26:53,415 - INFO - fetching fixture stats 65/110 for fixture 1208357
+2026-06-01 16:26:53,714 - INFO - fetch success
+2026-06-01 16:26:53,716 - WARNING - no stats data returned for fixture 1208357
+2026-06-01 16:26:54,716 - INFO - fetching fixture stats 66/110 for fixture 1208358
+2026-06-01 16:26:55,031 - INFO - fetch success
+2026-06-01 16:26:55,033 - WARNING - no stats data returned for fixture 1208358
+2026-06-01 16:26:56,033 - INFO - fetching fixture stats 67/110 for fixture 1208359
+2026-06-01 16:26:56,349 - INFO - fetch success
+2026-06-01 16:26:56,350 - WARNING - no stats data returned for fixture 1208359
+2026-06-01 16:26:57,351 - INFO - fetching fixture stats 68/110 for fixture 1208360
+2026-06-01 16:26:57,663 - INFO - fetch success
+2026-06-01 16:26:57,665 - WARNING - no stats data returned for fixture 1208360
+2026-06-01 16:26:58,665 - INFO - fetching fixture stats 69/110 for fixture 1208361
+2026-06-01 16:26:58,965 - INFO - fetch success
+2026-06-01 16:26:58,966 - WARNING - no stats data returned for fixture 1208361
+2026-06-01 16:26:59,967 - INFO - fetching fixture stats 70/110 for fixture 1208362
+2026-06-01 16:27:00,268 - INFO - fetch success
+2026-06-01 16:27:00,334 - INFO - saved fixture stats for fixture 1208362
+2026-06-01 16:27:01,335 - INFO - fetching fixture stats 71/110 for fixture 1208363
+2026-06-01 16:27:01,651 - INFO - fetch success
+2026-06-01 16:27:01,713 - INFO - saved fixture stats for fixture 1208363
+2026-06-01 16:27:02,713 - INFO - fetching fixture stats 72/110 for fixture 1208364
+2026-06-01 16:27:03,021 - INFO - fetch success
+2026-06-01 16:27:04,194 - INFO - saved fixture stats for fixture 1208364
+2026-06-01 16:27:05,195 - INFO - fetching fixture stats 73/110 for fixture 1208365
+2026-06-01 16:27:05,510 - INFO - fetch success
+2026-06-01 16:27:05,578 - INFO - saved fixture stats for fixture 1208365
+2026-06-01 16:27:06,578 - INFO - fetching fixture stats 74/110 for fixture 1208366
+2026-06-01 16:27:06,896 - INFO - fetch success
+2026-06-01 16:27:06,957 - INFO - saved fixture stats for fixture 1208366
+2026-06-01 16:27:07,957 - INFO - fetching fixture stats 75/110 for fixture 1208367
+2026-06-01 16:27:08,277 - INFO - fetch success
+2026-06-01 16:27:08,335 - INFO - saved fixture stats for fixture 1208367
+2026-06-01 16:27:09,336 - INFO - fetching fixture stats 76/110 for fixture 1208368
+2026-06-01 16:27:09,640 - INFO - fetch success
+2026-06-01 16:27:09,701 - INFO - saved fixture stats for fixture 1208368
+2026-06-01 16:27:10,701 - INFO - fetching fixture stats 77/110 for fixture 1208369
+2026-06-01 16:27:11,015 - INFO - fetch success
+2026-06-01 16:27:11,089 - INFO - saved fixture stats for fixture 1208369
+2026-06-01 16:27:12,090 - INFO - fetching fixture stats 78/110 for fixture 1208370
+2026-06-01 16:27:12,388 - INFO - fetch success
+2026-06-01 16:27:12,472 - INFO - saved fixture stats for fixture 1208370
+2026-06-01 16:27:13,473 - INFO - fetching fixture stats 79/110 for fixture 1208371
+2026-06-01 16:27:13,784 - INFO - fetch success
+2026-06-01 16:27:13,851 - INFO - saved fixture stats for fixture 1208371
+2026-06-01 16:27:14,852 - INFO - fetching fixture stats 80/110 for fixture 1208372
+2026-06-01 16:27:14,898 - WARNING - rate limited. waiting 1s...
+2026-06-01 16:27:15,945 - WARNING - rate limited. waiting 2s...
+2026-06-01 16:27:17,994 - WARNING - rate limited. waiting 4s...
+2026-06-01 16:27:22,046 - WARNING - rate limited. waiting 8s...
+2026-06-01 16:27:30,096 - WARNING - rate limited. waiting 16s...
+2026-06-01 16:27:46,391 - INFO - fetch success
+2026-06-01 16:27:46,393 - WARNING - no stats data returned for fixture 1208372
+2026-06-01 16:27:47,393 - INFO - fetching fixture stats 81/110 for fixture 1208373
+2026-06-01 16:27:47,710 - INFO - fetch success
+2026-06-01 16:27:47,711 - WARNING - no stats data returned for fixture 1208373
+2026-06-01 16:27:48,712 - INFO - fetching fixture stats 82/110 for fixture 1208374
+2026-06-01 16:27:49,015 - INFO - fetch success
+2026-06-01 16:27:49,017 - WARNING - no stats data returned for fixture 1208374
+2026-06-01 16:27:50,017 - INFO - fetching fixture stats 83/110 for fixture 1208375
+2026-06-01 16:27:50,316 - INFO - fetch success
+2026-06-01 16:27:50,317 - WARNING - no stats data returned for fixture 1208375
+2026-06-01 16:27:51,318 - INFO - fetching fixture stats 84/110 for fixture 1208376
+2026-06-01 16:27:51,631 - INFO - fetch success
+2026-06-01 16:27:51,632 - WARNING - no stats data returned for fixture 1208376
+2026-06-01 16:27:52,633 - INFO - fetching fixture stats 85/110 for fixture 1208377
+2026-06-01 16:27:52,938 - INFO - fetch success
+2026-06-01 16:27:52,939 - WARNING - no stats data returned for fixture 1208377
+2026-06-01 16:27:53,940 - INFO - fetching fixture stats 86/110 for fixture 1208378
+2026-06-01 16:27:54,243 - INFO - fetch success
+2026-06-01 16:27:54,244 - WARNING - no stats data returned for fixture 1208378
+2026-06-01 16:27:55,245 - INFO - fetching fixture stats 87/110 for fixture 1208379
+2026-06-01 16:27:55,540 - INFO - fetch success
+2026-06-01 16:27:55,541 - WARNING - no stats data returned for fixture 1208379
+2026-06-01 16:27:56,541 - INFO - fetching fixture stats 88/110 for fixture 1208380
+2026-06-01 16:27:56,840 - INFO - fetch success
+2026-06-01 16:27:56,841 - WARNING - no stats data returned for fixture 1208380
+2026-06-01 16:27:57,841 - INFO - fetching fixture stats 89/110 for fixture 1208381
+2026-06-01 16:27:58,156 - INFO - fetch success
+2026-06-01 16:27:58,157 - WARNING - no stats data returned for fixture 1208381
+2026-06-01 16:27:59,157 - INFO - fetching fixture stats 90/110 for fixture 1208382
+2026-06-01 16:27:59,458 - INFO - fetch success
+2026-06-01 16:27:59,459 - WARNING - no stats data returned for fixture 1208382
+2026-06-01 16:28:00,460 - INFO - fetching fixture stats 91/110 for fixture 1208383
+2026-06-01 16:28:00,790 - INFO - fetch success
+2026-06-01 16:28:01,002 - INFO - saved fixture stats for fixture 1208383
+2026-06-01 16:28:02,003 - INFO - fetching fixture stats 92/110 for fixture 1208384
+2026-06-01 16:28:02,310 - INFO - fetch success
+2026-06-01 16:28:02,376 - INFO - saved fixture stats for fixture 1208384
+2026-06-01 16:28:03,376 - INFO - fetching fixture stats 93/110 for fixture 1208385
+2026-06-01 16:28:03,681 - INFO - fetch success
+2026-06-01 16:28:03,743 - INFO - saved fixture stats for fixture 1208385
+2026-06-01 16:28:04,743 - INFO - fetching fixture stats 94/110 for fixture 1208386
+2026-06-01 16:28:05,066 - INFO - fetch success
+2026-06-01 16:28:05,649 - INFO - saved fixture stats for fixture 1208386
+2026-06-01 16:28:06,649 - INFO - fetching fixture stats 95/110 for fixture 1208387
+2026-06-01 16:28:06,959 - INFO - fetch success
+2026-06-01 16:28:07,017 - INFO - saved fixture stats for fixture 1208387
+2026-06-01 16:28:08,018 - INFO - fetching fixture stats 96/110 for fixture 1208388
+2026-06-01 16:28:08,308 - INFO - fetch success
+2026-06-01 16:28:08,374 - INFO - saved fixture stats for fixture 1208388
+2026-06-01 16:28:09,374 - INFO - fetching fixture stats 97/110 for fixture 1208389
+2026-06-01 16:28:09,673 - INFO - fetch success
+2026-06-01 16:28:10,575 - INFO - saved fixture stats for fixture 1208389
+2026-06-01 16:28:11,576 - INFO - fetching fixture stats 98/110 for fixture 1208390
+2026-06-01 16:28:11,889 - INFO - fetch success
+2026-06-01 16:28:12,151 - INFO - saved fixture stats for fixture 1208390
+2026-06-01 16:28:13,152 - INFO - fetching fixture stats 99/110 for fixture 1208391
+2026-06-01 16:28:13,500 - INFO - fetch success
+2026-06-01 16:28:13,564 - INFO - saved fixture stats for fixture 1208391
+2026-06-01 16:28:14,564 - INFO - fetching fixture stats 100/110 for fixture 1208392
+2026-06-01 16:28:14,864 - INFO - fetch success
+2026-06-01 16:28:14,931 - INFO - saved fixture stats for fixture 1208392
+2026-06-01 16:28:15,932 - INFO - fetching fixture stats 101/110 for fixture 1208393
+2026-06-01 16:28:15,978 - WARNING - rate limited. waiting 1s...
+2026-06-01 16:28:17,027 - WARNING - rate limited. waiting 2s...
+2026-06-01 16:28:19,080 - WARNING - rate limited. waiting 4s...
+2026-06-01 16:28:23,131 - WARNING - rate limited. waiting 8s...
