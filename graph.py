@@ -229,6 +229,7 @@ Classify the user's question into one or more of these categories:
 - match: Questions about specific matches, team performance in games
 - standings: Questions about league table, points, rankings, team position
 - prediction: Questions asking for predictions or comparative analysis
+- rag: Retrieve related database records that add context to the question
 
 User Question: {state['question']}
 
@@ -245,8 +246,15 @@ Do not include explanations, just the categories."""
         routes = [route.strip() for route in routes_text.split(',')]
         
         # Validate routes against allowed categories
-        allowed_routes = {"player", "match", "standings", "prediction"}
+        allowed_routes = {"player", "match", "standings", "prediction", "rag"}
         routes = [r for r in routes if r in allowed_routes]
+
+        # Retrieval complements SQL facts with related records when enabled.
+        rag_enabled = os.getenv("PL_RAG_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
+        if not rag_enabled:
+            routes = [route for route in routes if route != "rag"]
+        else:
+            routes.append("rag")
         
         # Fallback: if no valid routes found, default to match
         if not routes:
@@ -258,8 +266,24 @@ Do not include explanations, just the categories."""
         print(f"Error in router_node: {str(e)}")
         # Fallback to broad search if routing fails
         state["routes"] = ["match"]
+        if os.getenv("PL_RAG_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}:
+            state["routes"].append("rag")
     
     return state
+
+
+def rag_node(state: PLAnalystState) -> PLAnalystState:
+    """Retrieve relevant database context for the final answer synthesis."""
+    try:
+        from rag import retrieve
+
+        documents = retrieve(state["question"])
+        result = "\n".join(f"- {document}" for document in documents)
+        if not result:
+            result = "No relevant records found in the retrieval index. Run `python rag.py` to build it."
+    except Exception as exc:
+        result = f"RAG_UNAVAILABLE: {exc}"
+    return {"results": {"rag": result}}
 
 
 # ============================================================================
@@ -560,6 +584,8 @@ Task:
 Guidelines:
 - Be specific and cite data from the results above
 - Treat database results as the only source of factual claims; never invent values
+- Use retrieved RAG records as supporting context, and prefer matching SQL rows for exact statistical values
+- Ignore a RAG_UNAVAILABLE message when other specialists returned useful data
 - If a specialist reports QUERY_ERROR, say that the data could not be retrieved
 - For a ranking, state the entity and the requested number (goals, assists, xG, or points)
 - For comparisons, include every returned entity and all requested metrics
@@ -613,6 +639,7 @@ def route_to_specialist_nodes(state: PLAnalystState) -> list:
         "match": "match_node",
         "standings": "standings_node",
         "prediction": "prediction_node",
+        "rag": "rag_node",
     }
     
     # Convert routes to node names
@@ -660,6 +687,7 @@ def build_graph():
     workflow.add_node("match_node", match_node)
     workflow.add_node("standings_node", standings_node)
     workflow.add_node("prediction_node", prediction_node)
+    workflow.add_node("rag_node", rag_node)
     workflow.add_node("combine_node", combine_node)
     
     # Set entry point (router always runs first)
@@ -677,6 +705,7 @@ def build_graph():
     workflow.add_edge("match_node", "combine_node")
     workflow.add_edge("standings_node", "combine_node")
     workflow.add_edge("prediction_node", "combine_node")
+    workflow.add_edge("rag_node", "combine_node")
     
     # Combine node ends the workflow
     workflow.add_edge("combine_node", END)

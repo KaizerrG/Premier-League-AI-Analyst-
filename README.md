@@ -66,3 +66,14 @@ python run_eval.py
 ```
 
 The local database, environment file, and runtime caches are excluded from Git. Each developer creates the database locally by fetching data.
+
+## Optional RAG retrieval
+
+The LangGraph analyst can retrieve relevant season records from a local ChromaDB index and combine them with SQL results. RAG is off by default, so the app works without a local embedding service. To enable it:
+
+1. Install and start [Ollama](https://ollama.com/), then download the embedding model with `ollama pull nomic-embed-text`.
+2. Install project dependencies with `pip install -r requirements.txt`.
+3. Fetch or prepare the SQLite database, then build the local vector index with `python rag.py`.
+4. Set `PL_RAG_ENABLED=true` in `.env` and restart Streamlit.
+
+The index is stored in the ignored `chroma_db/` folder. Re-run `python rag.py` after refreshing data. Set `RAG_OLLAMA_URL` or `RAG_EMBEDDING_MODEL` in `.env` to use a different local Ollama endpoint or embedding model. RAG supplies related context; SQL remains the source for exact statistics.
