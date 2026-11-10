@@ -2,37 +2,37 @@
   {
     "id": "st-01", "category": "standings", "type": "sql",
     "question": "Which team is top of the league?",
-    "gold_sql": "SELECT team FROM standings ORDER BY points DESC LIMIT 1"
+    "gold_sql": "SELECT team_name FROM standings WHERE league = 'Premier League' AND season = '{season}' ORDER BY points DESC LIMIT 1"
   },
   {
     "id": "st-02", "category": "standings", "type": "sql",
     "question": "Which team has the best goal difference?",
-    "gold_sql": "SELECT team, goal_diff FROM standings ORDER BY goal_diff DESC LIMIT 1"
+    "gold_sql": "SELECT team_name, goal_difference FROM standings WHERE league = 'Premier League' AND season = '{season}' ORDER BY goal_difference DESC LIMIT 1"
   },
   {
     "id": "pl-01", "category": "player", "type": "sql",
     "question": "Who is the top scorer?",
-    "gold_sql": "SELECT player_name, goals FROM player_xg ORDER BY goals DESC LIMIT 1"
+    "gold_sql": "SELECT player_name, goals FROM player_xg WHERE league = 'Premier League' AND season = '{season}' ORDER BY goals DESC LIMIT 1"
   },
   {
     "id": "pl-02", "category": "player", "type": "sql",
     "question": "Who has the most assists?",
-    "gold_sql": "SELECT player_name, assists FROM player_xg ORDER BY assists DESC LIMIT 1"
+    "gold_sql": "SELECT player_name, assists FROM player_xg WHERE league = 'Premier League' AND season = '{season}' ORDER BY assists DESC LIMIT 1"
   },
   {
     "id": "xg-01", "category": "xg", "type": "sql",
     "question": "Which player has the highest xG this season?",
-    "gold_sql": "SELECT player_name, xG FROM player_xg ORDER BY xG DESC LIMIT 1"
+    "gold_sql": "SELECT player_name, xg FROM player_xg WHERE league = 'Premier League' AND season = '{season}' ORDER BY xg DESC LIMIT 1"
   },
   {
     "id": "xg-02", "category": "xg", "type": "sql",
     "question": "Who is overperforming their xG the most?",
-    "gold_sql": "SELECT player_name, goals - xG AS diff FROM player_xg ORDER BY diff DESC LIMIT 1"
+    "gold_sql": "SELECT player_name, goals - xg AS diff FROM player_xg WHERE league = 'Premier League' AND season = '{season}' ORDER BY diff DESC LIMIT 1"
   },
   {
     "id": "cmp-01", "category": "comparison", "type": "sql",
     "question": "Compare the goals and assists of the top two scorers.",
-    "gold_sql": "SELECT player_name, goals, assists FROM player_xg ORDER BY goals DESC LIMIT 2",
+    "gold_sql": "SELECT player_name, goals, assists FROM player_xg WHERE league = 'Premier League' AND season = '{season}' ORDER BY goals DESC LIMIT 2",
     "ordered": true
   },
   {

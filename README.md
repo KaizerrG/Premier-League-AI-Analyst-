@@ -1,48 +1,68 @@
 # Premier League AI Analyst
 
-A Streamlit football analytics dashboard and question answering assistant. The LangGraph workflow in `graph.py` is the analyst entry point; `main_app.py` is the app entry point.
+A Streamlit football analytics dashboard and question answering assistant. `graph.py` contains the LangGraph analyst, `main_app.py` is the dashboard, and `fetch_all.py` loads Understat data into SQLite.
 
-## Features
+## Requirements
 
-- Ask natural language questions about league standings, players, and match data.
-- Explore league tables, xG analysis, top scorers, and player comparisons.
-- Fetch data from Understat into a local SQLite database.
+- Python 3.11 (the Understat client currently depends on an aiohttp release without Python 3.12 Windows wheels)
+- A Groq API key for analyst chat
+- Network access to Understat when fetching data
 
 ## Setup
 
-Use Python 3.10 or newer:
+Create and activate a Python 3.11 virtual environment.
+
+Linux/macOS:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
+python3.11 -m venv .venv
+source .venv/bin/activate
+```
+
+Windows PowerShell:
+
+```powershell
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+Install dependencies and create the environment file:
+
+```text
 pip install -r requirements.txt
 ```
 
-Create a `.env` file with your Groq API key:
+Copy `.env.example` to `.env` and set `GROQ_API_KEY`. `PL_SEASON` defaults to `2024`, which means the 2024/25 season in Understat; the legacy `SEASON` variable is also supported. Set `PL_DATA_DB` only if you want the SQLite database somewhere other than the project folder.
+
+Linux/macOS: `cp .env.example .env`
+Windows PowerShell: `Copy-Item .env.example .env`
+
+## Run the dashboard
+
+Run these commands from the project folder:
 
 ```text
-GROQ_API_KEY=your_key_here
+python -m streamlit run main_app.py
 ```
 
-## Run
+Use the dashboard's **Refresh Data** button, or fetch data from a terminal:
 
-Fetch data when needed, then start the dashboard:
-
-```bash
+```text
 python fetch_all.py
-streamlit run main_app.py
 ```
 
-To run the analyst directly:
+The analyst can also run in a terminal:
 
-```bash
+```text
 python graph.py
 ```
 
-The eval harness uses the questions in `golden_set.json`:
+## Evaluation
 
-```bash
-python run_eval.py --db pl_data.db --golden golden_set.json
+Fetch the database first, then run:
+
+```text
+python run_eval.py
 ```
 
-`pl_data.db` is generated locally and is not included in Git. Fetch data before running the dashboard or eval.
+The local database, environment file, and runtime caches are excluded from Git. Each developer creates the database locally by fetching data.

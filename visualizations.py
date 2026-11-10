@@ -16,6 +16,7 @@ import plotly.graph_objects as go
 import sqlite3
 import pandas as pd
 from typing import Tuple, Optional
+from settings import DATABASE_PATH, SEASON
 
 # ============================================================================
 # DATABASE UTILITY FUNCTIONS
@@ -28,8 +29,7 @@ from typing import Tuple, Optional
 def load_standings(league: str) -> Optional[pd.DataFrame]:
     """
     Load league standings table from database filtered by league.
-    Since standings table doesn't have league column, we filter by teams
-    that belong to the selected league (determined from match_xg table).
+    Filter the standings by league and active season.
     
     Args:
         league: League display name (e.g., 'Premier League', 'La Liga', etc.)
@@ -39,27 +39,13 @@ def load_standings(league: str) -> Optional[pd.DataFrame]:
         None if query fails
     """
     try:
-        conn = sqlite3.connect("pl_data.db", check_same_thread=False)
-        
-        # Get all teams for this league from match_xg table
-        teams_query = f"SELECT DISTINCT home_team FROM match_xg WHERE league = ?"
-        teams_df = pd.read_sql_query(teams_query, conn, params=(league,))
-        
-        if teams_df.empty:
-            st.warning(f"No teams found for {league}")
-            conn.close()
-            return None
-        
-        teams_list = teams_df['home_team'].tolist()
-        placeholders = ','.join(['?' for _ in teams_list])
-        
-        # Load standings filtered by teams in this league
-        query = f"""SELECT rank, team_name, played, won, drawn, lost, points, 
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+        query = """SELECT rank, team_name, played, won, drawn, lost, points,
                           goals_for, goals_against, goal_difference 
                    FROM standings 
-                   WHERE team_name IN ({placeholders})
+                   WHERE league = ? AND season = ?
                    ORDER BY rank"""
-        df = pd.read_sql_query(query, conn, params=teams_list)
+        df = pd.read_sql_query(query, conn, params=(league, SEASON))
         conn.close()
 
         if df.empty:
@@ -86,9 +72,9 @@ def load_match_xg(league: str) -> Optional[pd.DataFrame]:
         None if query fails
     """
     try:
-        conn = sqlite3.connect("pl_data.db", check_same_thread=False)
-        query = "SELECT home_team, away_team, home_xg, away_xg, match_date FROM match_xg WHERE league = ?"
-        df = pd.read_sql_query(query, conn, params=(league,))
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+        query = "SELECT home_team, away_team, home_xg, away_xg, match_date FROM match_xg WHERE league = ? AND season = ?"
+        df = pd.read_sql_query(query, conn, params=(league, SEASON))
         conn.close()
         
         if df.empty:
@@ -111,13 +97,13 @@ def load_fixtures(league: str) -> Optional[pd.DataFrame]:
         league: League name (e.g., 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1')
     
     Returns:
-        pd.DataFrame: Fixture data with columns [home_team, away_team, goals_home, goals_away, fixture_date]
+        pd.DataFrame: Fixture data with columns [home_team, away_team, home_goals, away_goals, match_date]
         None if query fails
     """
     try:
-        conn = sqlite3.connect("pl_data.db", check_same_thread=False)
-        query = "SELECT home_team, away_team, home_goals, away_goals, fixture_date FROM fixtures WHERE league = ?"
-        df = pd.read_sql_query(query, conn, params=(league,))
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+        query = "SELECT home_team, away_team, home_goals, away_goals, match_date FROM fixtures WHERE league = ? AND season = ?"
+        df = pd.read_sql_query(query, conn, params=(league, SEASON))
         conn.close()
         
         if df.empty:
@@ -144,12 +130,12 @@ def load_player_xg(league: str) -> Optional[pd.DataFrame]:
         None if query fails
     """
     try:
-        conn = sqlite3.connect("pl_data.db", check_same_thread=False)
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         query = """SELECT player_name, team_name, position, games, minutes, goals, 
                           assists, xg, xa, npxg, shots, key_passes, xgchain, xgbuildup
                    FROM player_xg
-                   WHERE league = ?"""
-        df = pd.read_sql_query(query, conn, params=(league,))
+                   WHERE league = ? AND season = ?"""
+        df = pd.read_sql_query(query, conn, params=(league, SEASON))
         conn.close()
         
         if df.empty:
@@ -529,11 +515,12 @@ def load_all_player_xg() -> Optional[pd.DataFrame]:
         None if query fails
     """
     try:
-        conn = sqlite3.connect("pl_data.db", check_same_thread=False)
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         query = """SELECT player_name, team_name, position, games, minutes, goals, 
                           assists, xg, xa, npxg, shots, key_passes, xgchain, xgbuildup, league
-                   FROM player_xg"""
-        df = pd.read_sql_query(query, conn)
+                   FROM player_xg
+                   WHERE season = ?"""
+        df = pd.read_sql_query(query, conn, params=(SEASON,))
         conn.close()
         
         if df.empty:

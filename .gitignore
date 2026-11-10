@@ -1,6 +1,10 @@
 # Secrets and local environments
-.env
-.venv/
+.env*
+!.env.example
+*.env
+.streamlit/secrets.toml
+.venv*/
+.tmp/
 venv/
 
 # Generated data and caches

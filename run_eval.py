@@ -19,7 +19,9 @@ import sqlite3
 import statistics
 import sys
 import time
+from pathlib import Path
 from collections import defaultdict
+from settings import DATABASE_PATH, PROJECT_ROOT, SEASON
 
 
 def run_system(question: str) -> dict:
@@ -39,7 +41,8 @@ def norm(v):
 
 
 def fetch_rows(db, sql):
-    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)  # read-only
+    db_path = Path(db).expanduser().resolve()
+    con = sqlite3.connect(f"{db_path.as_uri()}?mode=ro", uri=True)  # read-only
     try:
         return [tuple(norm(x) for x in r) for r in con.execute(sql).fetchall()]
     finally:
@@ -108,7 +111,8 @@ def evaluate(db, golden):
             r["unsafe_sql"] = True
 
         if item["type"] == "sql":
-            gold = fetch_rows(db, item["gold_sql"])
+            gold_sql = item["gold_sql"].replace("{season}", SEASON)
+            gold = fetch_rows(db, gold_sql)
             r["correct"] = (not err) and answer_has_facts(gold, answer)
             if sql and not r["unsafe_sql"]:
                 try:
@@ -153,10 +157,10 @@ def report(results):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--db", default="pl_data.db")
-    ap.add_argument("--golden", default="golden_set.json")
+    ap.add_argument("--db", default=str(DATABASE_PATH))
+    ap.add_argument("--golden", default=str(PROJECT_ROOT / "golden_set.json"))
     ap.add_argument("--min-acc", type=float, default=0.0, help="exit 1 if answer accuracy is below this")
-    ap.add_argument("--out", default="eval_report.json")
+    ap.add_argument("--out", default=str(PROJECT_ROOT / "eval_report.json"))
     args = ap.parse_args()
 
     with open(args.golden) as f:

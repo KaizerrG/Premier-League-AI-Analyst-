@@ -1,12 +1,9 @@
 import streamlit as st
 import sqlite3
-import pandas as pd
-import os
 import subprocess
-from dotenv import load_dotenv
-from datetime import datetime
+import sys
 
-load_dotenv()
+from settings import DATABASE_PATH, PROJECT_ROOT, SEASON_LABEL
 
 # ─────────────────────────────────────────
 # LEAGUE CONFIGURATION
@@ -21,7 +18,7 @@ LEAGUE_MAP = {
 
 # ROCKY: page config must be first streamlit call. always.
 st.set_page_config(
-    page_title="PL 2024/25 AI Analyst",
+    page_title=f"PL {SEASON_LABEL} AI Analyst",
     page_icon="⚽",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -56,13 +53,13 @@ except Exception as e:
 # ─────────────────────────────────────────
 def get_last_refresh():
     try:
-        conn = sqlite3.connect("pl_data.db", check_same_thread=False)
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         result = conn.execute("SELECT MAX(fetched_at) FROM standings").fetchone()
         conn.close()
         if result and result[0]:
             return result[0][:16]
         return "Never"
-    except:
+    except sqlite3.Error:
         return "Unknown"
 
 
@@ -70,7 +67,7 @@ def get_last_refresh():
 # ROCKY: sidebar navigation
 # ─────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## ⚽ PL 2024/25")
+    st.markdown(f"## ⚽ PL {SEASON_LABEL}")
     st.markdown("**AI Football Analyst**")
     st.divider()
 
@@ -84,7 +81,7 @@ with st.sidebar:
     st.divider()
 
     # ROCKY: show season and last refresh info
-    st.markdown("**Season:** 2024/25")
+    st.markdown(f"**Season:** {SEASON_LABEL}")
     st.markdown(f"**Last refresh:** {get_last_refresh()}")
 
     st.divider()
@@ -94,10 +91,20 @@ with st.sidebar:
     if st.button("🔄 Refresh Data", use_container_width=True):
         with st.spinner("fetching latest data from Understat..."):
             try:
-                subprocess.run(["python", "fetch_all.py"], check=True)
+                subprocess.run(
+                    [sys.executable, str(PROJECT_ROOT / "fetch_all.py")],
+                    check=True,
+                    cwd=PROJECT_ROOT,
+                    capture_output=True,
+                    text=True,
+                )
+                st.cache_data.clear()
                 st.success("data updated!")
             except Exception as e:
-                st.error(f"refresh failed: {e}")
+                detail = str(e)
+                if isinstance(e, subprocess.CalledProcessError):
+                    detail = (e.stderr or e.stdout or detail).strip()
+                st.error(f"Refresh failed: {detail}")
 
     st.divider()
     st.markdown("*Built with LangGraph + Groq*")
@@ -110,7 +117,7 @@ with st.sidebar:
 # ─────────────────────────────────────────
 if page == "💬 AI Chat":
     st.title("💬 PL AI Analyst")
-    st.markdown("Ask anything about the Premier League 2024/25 season.")
+    st.markdown(f"Ask anything about the {SEASON_LABEL} season.")
 
     # ROCKY: session state stores conversation history
     # without this chat history disappears on every interaction
@@ -131,9 +138,10 @@ if page == "💬 AI Chat":
 
     # ROCKY: chat input at bottom. only active if agent ready.
     question = st.chat_input(
-        "Ask about PL 2024/25...",
+        f"Ask about PL {SEASON_LABEL}...",
         disabled=not AGENT_READY
     )
+    question = question or st.session_state.pop("pending_question", None)
 
     if question:
         # show user message
@@ -192,10 +200,7 @@ if page == "💬 AI Chat":
         for i, example in enumerate(examples):
             with cols[i % 2]:
                 if st.button(example, use_container_width=True):
-                    st.session_state.messages.append({
-                        "role": "user",
-                        "content": example
-                    })
+                    st.session_state.pending_question = example
                     st.rerun()
 
 

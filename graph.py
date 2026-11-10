@@ -9,17 +9,14 @@ This module implements a multi-node graph that:
 """
 
 import os
+import re
 import sqlite3
 from typing import TypedDict, Optional, Annotated
-from dotenv import load_dotenv
 import pandas as pd
 
 from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, END
-from langchain_core.messages import BaseMessage
-
-# Load environment variables from .env file
-load_dotenv()
+from settings import DATABASE_PATH, SEASON, SEASON_LABEL
 
 # ============================================================================
 # STATE MERGING UTILITY
@@ -81,34 +78,121 @@ llm = ChatGroq(
 # SQL EXECUTION TOOL
 # ============================================================================
 
-def run_sql(query: str) -> str:
-    """
-    Execute SQL query against pl_data.db and return results as formatted string.
-    
-    Args:
-        query: SQL query string to execute
-        
-    Returns:
-        String representation of query results (pandas DataFrame.to_string())
-        
-    Raises:
-        sqlite3.Error: If database connection or query execution fails
-    """
+def read_sql_frame(query: str, params=()) -> pd.DataFrame:
+    """Read one SELECT query from the database opened in read-only mode."""
+    query = query.strip().rstrip(";").strip()
+    if ";" in query or not re.match(r"^(select|with)\b", query, re.IGNORECASE):
+        raise ValueError("Only one read-only SELECT query is allowed.")
+    if not DATABASE_PATH.is_file():
+        raise FileNotFoundError(f"Database not found: {DATABASE_PATH}. Run fetch_all.py first.")
+
+    db_uri = f"{DATABASE_PATH.resolve().as_uri()}?mode=ro"
+    conn = sqlite3.connect(db_uri, uri=True, timeout=15)
     try:
-        conn = sqlite3.connect("pl_data.db")
-        df = pd.read_sql(query, conn)
+        conn.execute("PRAGMA query_only = ON")
+        return pd.read_sql_query(query, conn, params=params)
+    finally:
         conn.close()
-        
-        # Return formatted string, handle empty results
+
+
+def run_sql(query: str, params=()) -> str:
+    """Execute one read-only SELECT and format its rows for the analyst."""
+    df = read_sql_frame(query, params)
+    if df.empty:
+        return "No data found for this query."
+    return df.to_string(index=False)
+
+
+def clean_sql_response(sql: str) -> str:
+    """Remove an optional Markdown SQL fence from an LLM response."""
+    return re.sub(r"^```(?:sql)?\s*|\s*```$", "", sql.strip(), flags=re.IGNORECASE).strip()
+
+
+def run_query_from_prompt(prompt: str) -> str:
+    """Generate and execute a query, retrying once with the database error."""
+    last_error = None
+    for attempt in range(2):
+        retry_note = ""
+        if attempt:
+            retry_note = (
+                f"\nThe previous SQL failed with this error: {last_error}\n"
+                "Correct the query using only the tables and columns listed above. "
+                "Return one read-only SELECT query and no explanation."
+            )
+        response = llm.invoke(prompt + retry_note)
+        sql_query = clean_sql_response(response.content)
+        try:
+            return run_sql(sql_query)
+        except Exception as exc:
+            last_error = exc
+    raise RuntimeError(f"SQL query failed after one retry: {last_error}") from last_error
+
+
+def answer_common_question(question: str) -> Optional[str]:
+    """Answer common leaderboard questions with fixed, schema-safe queries."""
+    q = question.casefold()
+    leagues = {
+        "premier league": "Premier League",
+        "la liga": "La Liga",
+        "bundesliga": "Bundesliga",
+        "serie a": "Serie A",
+        "ligue 1": "Ligue 1",
+    }
+    league = next((name for key, name in leagues.items() if key in q), "Premier League")
+    season_match = re.search(r"\b20\d{2}\b", q)
+    season = season_match.group(0) if season_match else SEASON
+    all_leagues = "all leagues" in q or "across leagues" in q
+    league_filter = "" if all_leagues else " AND league = ?"
+    # The SQL places the season placeholder before the optional league one.
+    params = (season,) if all_leagues else (season, league)
+
+    player_query = None
+    title = None
+    metric = None
+    if re.search(r"\b(top scorer|most goals|highest scoring)\b", q):
+        player_query = f"SELECT player_name, goals FROM player_xg WHERE season = ?{league_filter} ORDER BY goals DESC LIMIT 1"
+        title, metric = "top scorer", "goals"
+    elif re.search(r"\b(most assists|highest assists)\b", q):
+        player_query = f"SELECT player_name, assists FROM player_xg WHERE season = ?{league_filter} ORDER BY assists DESC LIMIT 1"
+        title, metric = "most assists", "assists"
+    elif re.search(r"\b(highest|most) (?:xg|expected goals)\b", q):
+        player_query = f"SELECT player_name, xg FROM player_xg WHERE season = ?{league_filter} ORDER BY xg DESC LIMIT 1"
+        title, metric = "highest xG", "xg"
+    elif re.search(r"\b(overperform|overperforming|outperform|outperforming)\b.*\bxg\b", q):
+        player_query = f"SELECT player_name, goals - xg AS difference FROM player_xg WHERE season = ?{league_filter} ORDER BY difference DESC LIMIT 1"
+        title, metric = "highest overperformance against xG", "difference"
+    elif re.search(r"\b(compare|comparison)\b.*\btop two scorers\b|\btop two scorers\b.*\b(compare|comparison)\b", q):
+        player_query = f"SELECT player_name, goals, assists FROM player_xg WHERE season = ?{league_filter} ORDER BY goals DESC LIMIT 2"
+
+    if player_query:
+        df = read_sql_frame(player_query, params)
         if df.empty:
-            return "No data found for this query."
-        
-        return df.to_string()
-    
-    except sqlite3.Error as e:
-        return f"Database error: {str(e)}"
-    except Exception as e:
-        return f"Error executing SQL query: {str(e)}"
+            return f"No player data is available for {league} in the {season}/{(int(season) + 1) % 100:02d} season."
+        if metric:
+            row = df.iloc[0]
+            value = f"{float(row[metric]):.2f}" if metric == "difference" else str(row[metric])
+            return f"{row['player_name']} has the {title} in {league} with {value} {metric if metric != 'difference' else 'goals above xG'}."
+        lines = [f"{row.player_name}: {int(row.goals)} goals, {int(row.assists)} assists" for row in df.itertuples(index=False)]
+        return f"Top two scorers in {league}: " + "; ".join(lines) + "."
+
+    standings_query = None
+    standings_title = None
+    if re.search(r"\b(best|highest) goal difference\b", q):
+        standings_query = f"SELECT team_name, goal_difference FROM standings WHERE season = ?{league_filter} ORDER BY goal_difference DESC LIMIT 1"
+        standings_title = "best goal difference"
+    elif re.search(r"\b(top of (?:the )?(?:league|table)|leader of (?:the )?(?:league|table)|top team)\b", q):
+        standings_query = f"SELECT team_name, points FROM standings WHERE season = ?{league_filter} ORDER BY points DESC LIMIT 1"
+        standings_title = "top of the league"
+
+    if standings_query:
+        df = read_sql_frame(standings_query, params)
+        if df.empty:
+            return f"No standings data is available for {league} in the {season}/{(int(season) + 1) % 100:02d} season."
+        row = df.iloc[0]
+        value = row.iloc[1]
+        unit = "points" if standings_title == "top of the league" else "goal difference"
+        return f"{row['team_name']} has the {standings_title} in {league} with {value} {unit}."
+    return None
 
 
 # ============================================================================
@@ -204,55 +288,32 @@ def player_node(state: PLAnalystState) -> PLAnalystState:
     try:
         sql_prompt = f"""You are a Premier League SQL expert.
 
-For complex concepts use these stat combinations:
-- creative/playmaker = xA, key_passes, assists, xGChain
-- clinical/finisher = goals, npxG, shots, xG
-- complete player = goals, assists, xG, xA, xGChain
-- dangerous = xG, shots, key_passes
-- hardworking = minutes, games, xGBuildup
-
 Available columns ONLY:
+Table: player_xg
 player_name, team_name, position, games, minutes, goals, 
-assists, xG, xA, npxG, shots, key_passes, xGChain, xGBuildup, yellow_cards, red_cards, league, season
+assists, xg, xa, npxg, shots, key_passes, xgchain, xgbuildup, yellow_cards, red_cards, league, season
 
 IMPORTANT LEAGUE FILTERING:
 - If user mentions a specific league (e.g., "Premier League", "La Liga", "Bundesliga", "Serie A", "Ligue 1"), ALWAYS add WHERE league = 'League Name'
-- If no league is specified in the question, search across ALL leagues
-- Always filter by league when user specifies one
+- Default to Premier League unless the user explicitly asks for all leagues
+- Filter by the named league whenever the question specifies one
 
-Write ONE SQL query that:
-1. Selects all individual stats as separate columns (for comparison)
-2. Orders by a weighted score to rank players (but do NOT display the score)
-3. Shows which stats outweigh others by the ranking
-
-Example - for creative players order by playmaking but show all stats:
-SELECT player_name, team_name, position, league,
-       xA, key_passes, assists, xGChain
-FROM player_xg
-WHERE league = 'Premier League'
-ORDER BY (xA * 0.3 + key_passes * 0.3 + assists * 0.4) DESC
-LIMIT 10
+Choose the statistic requested and sort by that statistic (for example, goals
+DESC for top scorer, assists DESC for most assists, xg DESC for highest xG).
+Use only columns listed above. Default to league = 'Premier League' and season
+= '{SEASON}' unless the user requests a different league or season. Return a
+small useful result set with a LIMIT of at most 20.
 
 User Question: {state['question']}
 
 Return ONLY SQL. no explanation.
-SELECT all individual stats as columns (NOT the score).
-ORDER BY weighted combination to rank players.
 Use proper SQLite syntax.
 NEVER invent columns."""
 
-        response = llm.invoke(sql_prompt)
-        sql_query = response.content.strip()
-        
-        # Remove markdown code blocks if present
-        if sql_query.startswith("```"):
-            sql_query = sql_query.split("```")[1].replace("sql", "", 1).strip()
-        
-        # Execute query
-        results = run_sql(sql_query)
+        results = run_query_from_prompt(sql_prompt)
         
     except Exception as e:
-        error_msg = f"Error in player_node: {str(e)}"
+        error_msg = f"QUERY_ERROR: player data could not be queried: {e}"
         print(error_msg)
         results = error_msg
     
@@ -288,26 +349,18 @@ def match_node(state: PLAnalystState) -> PLAnalystState:
     try:
         sql_prompt = f"""You are a Premier League SQL expert for match analysis.
 
-For performance metrics use these stat combinations:
-- offensive dominance = goals_home + xg_home + shots_home + possession_home
-- defensive strength = goals_away + xg_away + shots_away
-- possession control = possession_home + shots_home
-- set piece danger = corners_home (use with goals_home for correlation)
-- match intensity = shots_home + shots_away + corners_home (total action)
+Allowed table: fixtures (preferred) or match_xg.
+Available columns in fixtures:
+id, league, season, fixture_id, home_team, away_team, home_goals, away_goals,
+home_xg, away_xg, home_win_prob, draw_prob, away_win_prob, match_date
 
-Available columns ONLY:
-fixtures: home_team, away_team, date, goals_home, goals_away, gameweek
-match_xg: home_team, away_team, xg_home, xg_away, date, league
-fixture_stats: home_team, away_team, date, possession_home, shots_home, shots_away, corners_home
+Available columns in match_xg:
+id, league, season, match_id, home_team, away_team, home_xg, away_xg, match_date
 
-IMPORTANT LEAGUE FILTERING:
-- If user mentions a specific league (e.g., "Premier League", "La Liga", "Bundesliga", "Serie A", "Ligue 1"), ALWAYS add WHERE league = 'League Name'
-- If no league is specified, search across all leagues
-- Always filter by league when user specifies one
-
-Combine tables with JOINs on (home_team, away_team, date).
-For rankings use weighted scoring to show dominance:
-SELECT home_team, (xg_home * 0.4 + possession_home * 0.3) as dominance_score
+Use fixtures for match results and expected goals; it already contains both.
+Filter to league = 'Premier League' and season = '{SEASON}' by default, unless
+the user requests a different league, all leagues, or another season. Use
+match_date as the date column. Do not reference tables or columns not listed.
 
 User Question: {state['question']}
 
@@ -315,18 +368,10 @@ Return ONLY SQL. no explanation.
 Use proper SQLite syntax.
 NEVER invent columns."""
 
-        response = llm.invoke(sql_prompt)
-        sql_query = response.content.strip()
-        
-        # Remove markdown code blocks if present
-        if sql_query.startswith("```"):
-            sql_query = sql_query.split("```")[1].replace("sql", "", 1).strip()
-        
-        # Execute query
-        results = run_sql(sql_query)
+        results = run_query_from_prompt(sql_prompt)
         
     except Exception as e:
-        error_msg = f"Error in match_node: {str(e)}"
+        error_msg = f"QUERY_ERROR: match data could not be queried: {e}"
         print(error_msg)
         results = error_msg
     
@@ -345,7 +390,7 @@ def standings_node(state: PLAnalystState) -> PLAnalystState:
     
     Queries tables:
     - standings: Current league table with points, wins, losses, draws
-    - team_stats: Aggregate team statistics (goals, xG, defensive stats)
+    - team-level xG and results stored directly in standings
     
     Process:
     1. Use Groq to generate SQL based on question
@@ -361,13 +406,15 @@ def standings_node(state: PLAnalystState) -> PLAnalystState:
     try:
         sql_prompt = f"""You are a SQL expert for Premier League data analysis.
 
-EXACT Table Schemas (DO NOT USE ANY OTHER COLUMNS):
+Allowed table: standings. EXACT schema (DO NOT USE OTHER COLUMNS):
 
 standings table columns:
-  position, team, wins, draws, losses, points, goal_difference
+  league, season, rank, team_name, played, won, drawn, lost, goals_for,
+  goals_against, goal_difference, xg, xga, points
 
-team_stats table columns:
-  team, games_played, total_goals, total_xg, total_xg_against
+The active season is {SEASON_LABEL} (season value '{SEASON}'). Filter to league
+= 'Premier League' and season = '{SEASON}' unless the question explicitly asks
+for another league, all leagues, or another season. Use only the columns above.
 
 User Question: {state['question']}
 
@@ -377,18 +424,10 @@ Sort by relevant columns (e.g., points DESC for standings).
 Use proper SQL syntax for SQLite.
 NEVER use unlisted columns."""
 
-        response = llm.invoke(sql_prompt)
-        sql_query = response.content.strip()
-        
-        # Remove markdown code blocks if present
-        if sql_query.startswith("```"):
-            sql_query = sql_query.split("```")[1].replace("sql", "", 1).strip()
-        
-        # Execute query
-        results = run_sql(sql_query)
+        results = run_query_from_prompt(sql_prompt)
         
     except Exception as e:
-        error_msg = f"Error in standings_node: {str(e)}"
+        error_msg = f"QUERY_ERROR: standings data could not be queried: {e}"
         print(error_msg)
         results = error_msg
     
@@ -432,49 +471,30 @@ def prediction_node(state: PLAnalystState) -> PLAnalystState:
     try:
         sql_prompt = f"""You are a Premier League SQL expert for predictive analysis.
 
-For prediction concepts use these stat combinations:
-- team form = recent wins + recent xG differential (ORDER BY date DESC)
-- home advantage = home_goals / home_xg ratio vs away_goals / away_xg ratio
-- xG-based strength = xg_home - xg_away over recent matches
-- player threat = top player goals + xG in recent games
-- defensive record = goals_against + xga patterns
-- momentum = recent points trend
-
 Available columns ONLY:
-fixtures: home_team, away_team, date, goals_home, goals_away, gameweek
-match_xg: home_team, away_team, xg_home, xg_away, date, league
-fixture_stats: home_team, away_team, date, possession_home, shots_home, shots_away, corners_home
-standings: position, team, wins, draws, losses, points, goal_difference
-player_xg: player_name, team_name, position, games, minutes, goals, assists, xG, xA, npxG, shots, key_passes, xGChain, xGBuildup, yellow_cards, red_cards, league, season
+Allowed tables: fixtures, match_xg, standings, player_xg.
+fixtures: league, season, fixture_id, home_team, away_team, home_goals, away_goals, home_xg, away_xg, match_date
+match_xg: league, season, match_id, home_team, away_team, home_xg, away_xg, match_date
+standings: league, season, rank, team_name, played, won, drawn, lost, goals_for, goals_against, goal_difference, xg, xga, points
+player_xg: league, season, player_name, team_name, position, games, minutes, goals, assists, xg, xa, npxg, shots, key_passes, xgchain, xgbuildup, yellow_cards, red_cards
 
-IMPORTANT LEAGUE FILTERING:
-- If user mentions a specific league (e.g., "Premier League", "La Liga", "Bundesliga", "Serie A", "Ligue 1"), ALWAYS add WHERE league = 'League Name'
-- If no league is specified, search across all leagues
-- Always filter by league when user specifies one
-
-JOIN tables on dates and team names to combine form, xG, and player data.
-For predictions use weighted scoring:
-SELECT home_team, away_team, (xg_home * 0.4 + points_home * 0.3) as prediction_score
+Filter every relevant table to league = 'Premier League' and season = '{SEASON}'
+by default unless the user requests a different league, all leagues, or another
+season. Use match_date for time ordering. Do not reference unlisted columns or
+tables. Join fixtures and match_xg with fixtures.fixture_id = match_xg.match_id,
+and include league and season in the join.
 
 User Question: {state['question']}
 
 Return ONLY SQL. no explanation.
-Order by recent data (date DESC) for form analysis.
+Order by recent data (match_date DESC) for form analysis.
 Use proper SQLite syntax.
 NEVER invent columns."""
 
-        response = llm.invoke(sql_prompt)
-        sql_query = response.content.strip()
-        
-        # Remove markdown code blocks if present
-        if sql_query.startswith("```"):
-            sql_query = sql_query.split("```")[1].replace("sql", "", 1).strip()
-        
-        # Execute query
-        results = run_sql(sql_query)
+        results = run_query_from_prompt(sql_prompt)
         
     except Exception as e:
-        error_msg = f"Error in prediction_node: {str(e)}"
+        error_msg = f"QUERY_ERROR: prediction data could not be queried: {e}"
         print(error_msg)
         results = error_msg
     
@@ -519,6 +539,9 @@ def combine_node(state: PLAnalystState) -> PLAnalystState:
         # If no results available, return empty answer
         if not results_text.strip():
             return {"answer": "Unable to retrieve data for this question."}
+
+        if all(str(result).startswith("QUERY_ERROR:") for result in state["results"].values()):
+            return {"answer": "I couldn't retrieve matching data from the database. Check that the database has been fetched and that the question uses supported data."}
         
         # Construct synthesis prompt
         synthesis_prompt = f"""You are a Premier League analyst synthesizing data from multiple sources.
@@ -536,6 +559,10 @@ Task:
 
 Guidelines:
 - Be specific and cite data from the results above
+- Treat database results as the only source of factual claims; never invent values
+- If a specialist reports QUERY_ERROR, say that the data could not be retrieved
+- For a ranking, state the entity and the requested number (goals, assists, xG, or points)
+- For comparisons, include every returned entity and all requested metrics
 - Highlight relevant patterns or trends
 - If data is incomplete or contradictory, acknowledge it
 - Structure your answer clearly with key points first
@@ -677,6 +704,18 @@ def run_analyst(question: str, conversation_history: Optional[list] = None) -> s
     Returns:
         Final synthesized answer from the graph
     """
+    if re.search(r"\b(drop|delete|insert|update|alter|create|truncate|replace)\s+(table|into|from|set)\b", question, re.IGNORECASE):
+        return "I can't modify the database. Analyst queries are read-only."
+
+    years = [int(year) for year in re.findall(r"\b20\d{2}\b", question)]
+    asks_for_prediction = re.search(r"\b(will win|winner|champion|predict|forecast)\b", question, re.IGNORECASE)
+    if asks_for_prediction and any(year > int(SEASON) + 1 for year in years):
+        return f"I can't reliably predict results for {max(years)}; the analyst only answers from available {SEASON_LABEL} data."
+
+    direct_answer = answer_common_question(question)
+    if direct_answer is not None:
+        return direct_answer
+
     # Initialize state
     initial_state = {
         "question": question,
@@ -718,7 +757,7 @@ if __name__ == "__main__":
     print("\n" + "="*70)
     print("Premier League AI Analyst - LangGraph Workflow")
     print("="*70)
-    print("Ask any question about the Premier League 2024/25 season.")
+    print(f"Ask any question about the Premier League {SEASON_LABEL} season.")
     print("Type 'quit' to exit.\n")
     
     conversation_history = []
