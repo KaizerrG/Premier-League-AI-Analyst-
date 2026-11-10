@@ -1,66 +1,48 @@
-# Premier League AI Analyst 🏴󠁧󠁢󠁥󠁮󠁧󠁿⚽
+# Premier League AI Analyst
 
-> 🚧 Project Under Active Development
+A Streamlit football analytics dashboard and question answering assistant. The LangGraph workflow in `graph.py` is the analyst entry point; `main_app.py` is the app entry point.
 
-An agentic AI application that answers natural language questions 
-about the Premier League 2024/25 season using real match data, 
-RAG architecture, and a local LLM.
+## Features
 
-## What It Does
-Ask plain english questions like:
-- "Who is the top scorer?"
-- "What was Arsenal's xG in gameweek 28?"
-- "Which team has the best goal difference?"
-
-## Tech Stack
-- **Data** → API-Football + SQLite
-- **RAG** → ChromaDB + nomic-embed-text
-- **AI Brain** → Ollama + LLaMA3
-- **UI** → Streamlit
-
-## Architecture
-API-Football → fetch_data.py → SQLite (pl_data.db)
-                                        ↓
-                                     rag.py
-                                        ↓
-                              ChromaDB (embeddings)
-                                        ↓
-                                    agent.py
-                                        ↓
-                                 Ollama / LLaMA3
-                                        ↓
-                              app.py (Streamlit UI)
-                                        ↓
-                              Natural Language Answer
+- Ask natural language questions about league standings, players, and match data.
+- Explore league tables, xG analysis, top scorers, and player comparisons.
+- Fetch data from Understat into a local SQLite database.
 
 ## Setup
+
+Use Python 3.10 or newer:
+
 ```bash
-git clone <your-repo-url>
-cd pl-analyst
-python3 -m venv .venv
-source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
 ```
 
-Add `.env` file:
+Create a `.env` file with your Groq API key:
 
-API_FOOTBALL_KEY=your_key_here
-SEASON=2024
-
-Run:
-```bash
-python fetch_data.py
-python rag.py
-streamlit run app.py
+```text
+GROQ_API_KEY=your_key_here
 ```
 
-## Roadmap
-- [ ] Advanced RAG with reranking
-- [ ] Player comparison feature
-- [ ] xG visualizations
-- [ ] WC 2026 data integration
-- [ ] GPT-4 / Claude API option
+## Run
 
-## Status
-Under development. Core pipeline working.
+Fetch data when needed, then start the dashboard:
 
+```bash
+python fetch_all.py
+streamlit run main_app.py
+```
+
+To run the analyst directly:
+
+```bash
+python graph.py
+```
+
+The eval harness uses the questions in `golden_set.json`:
+
+```bash
+python run_eval.py --db pl_data.db --golden golden_set.json
+```
+
+`pl_data.db` is generated locally and is not included in Git. Fetch data before running the dashboard or eval.

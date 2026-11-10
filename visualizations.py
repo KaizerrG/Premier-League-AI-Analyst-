@@ -18,20 +18,6 @@ import pandas as pd
 from typing import Tuple, Optional
 
 # ============================================================================
-# PAGE CONFIGURATION
-# ============================================================================
-
-st.set_page_config(
-    page_title="PL 2024/25 Analytics Dashboard",
-    page_icon="⚽",
-    layout="wide"
-)
-
-# Add custom title and header
-st.title("⚽ Premier League 2024/25 Analytics Dashboard")
-st.markdown("---")
-
-# ============================================================================
 # DATABASE UTILITY FUNCTIONS
 # ============================================================================
 # NOTE: No cached DB connection. Each loader function opens/closes
@@ -39,22 +25,45 @@ st.markdown("---")
 # cross-thread SQLite issues in Streamlit.
 
 @st.cache_data
-def load_standings() -> Optional[pd.DataFrame]:
+def load_standings(league: str) -> Optional[pd.DataFrame]:
     """
-    Load league standings table from database.
+    Load league standings table from database filtered by league.
+    Since standings table doesn't have league column, we filter by teams
+    that belong to the selected league (determined from match_xg table).
+    
+    Args:
+        league: League display name (e.g., 'Premier League', 'La Liga', etc.)
     
     Returns:
-        pd.DataFrame: Standings data with columns [rank, team_name, won, drawn, lost, points, goals_for, goals_against, goal_difference]
+        pd.DataFrame: Standings data with columns [rank, team_name, played, won, drawn, lost, points, goals_for, goals_against, goal_difference]
         None if query fails
     """
     try:
         conn = sqlite3.connect("pl_data.db", check_same_thread=False)
-        query = "SELECT rank, team_name, played, won, drawn, lost, points, goals_for, goals_against, goal_difference FROM standings ORDER BY rank"
-        df = pd.read_sql_query(query, conn)
+        
+        # Get all teams for this league from match_xg table
+        teams_query = f"SELECT DISTINCT home_team FROM match_xg WHERE league = ?"
+        teams_df = pd.read_sql_query(teams_query, conn, params=(league,))
+        
+        if teams_df.empty:
+            st.warning(f"No teams found for {league}")
+            conn.close()
+            return None
+        
+        teams_list = teams_df['home_team'].tolist()
+        placeholders = ','.join(['?' for _ in teams_list])
+        
+        # Load standings filtered by teams in this league
+        query = f"""SELECT rank, team_name, played, won, drawn, lost, points, 
+                          goals_for, goals_against, goal_difference 
+                   FROM standings 
+                   WHERE team_name IN ({placeholders})
+                   ORDER BY rank"""
+        df = pd.read_sql_query(query, conn, params=teams_list)
         conn.close()
 
         if df.empty:
-            st.warning("No standings data available")
+            st.warning(f"No standings data available for {league}")
             return None
         
         return df
@@ -65,22 +74,25 @@ def load_standings() -> Optional[pd.DataFrame]:
 
 
 @st.cache_data
-def load_match_xg() -> Optional[pd.DataFrame]:
+def load_match_xg(league: str) -> Optional[pd.DataFrame]:
     """
-    Load match xG data from database.
+    Load match xG data from database filtered by league.
+    
+    Args:
+        league: League name (e.g., 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1')
     
     Returns:
-        pd.DataFrame: Match xG data with columns [home_team, away_team, home_xg, away_xg, date]
+        pd.DataFrame: Match xG data with columns [home_team, away_team, home_xg, away_xg, match_date]
         None if query fails
     """
     try:
         conn = sqlite3.connect("pl_data.db", check_same_thread=False)
-        query = "SELECT home_team, away_team, home_xg, away_xg, match_date FROM match_xg"
-        df = pd.read_sql_query(query, conn)
+        query = "SELECT home_team, away_team, home_xg, away_xg, match_date FROM match_xg WHERE league = ?"
+        df = pd.read_sql_query(query, conn, params=(league,))
         conn.close()
         
         if df.empty:
-            st.warning("No match xG data available")
+            st.warning(f"No match xG data available for {league}")
             return None
         
         return df
@@ -91,22 +103,25 @@ def load_match_xg() -> Optional[pd.DataFrame]:
 
 
 @st.cache_data
-def load_fixtures() -> Optional[pd.DataFrame]:
+def load_fixtures(league: str) -> Optional[pd.DataFrame]:
     """
-    Load fixture data (actual goals) from database.
+    Load fixture data (actual goals) from database filtered by league.
+    
+    Args:
+        league: League name (e.g., 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1')
     
     Returns:
-        pd.DataFrame: Fixture data with columns [home_team, away_team, goals_home, goals_away, date]
+        pd.DataFrame: Fixture data with columns [home_team, away_team, goals_home, goals_away, fixture_date]
         None if query fails
     """
     try:
         conn = sqlite3.connect("pl_data.db", check_same_thread=False)
-        query = "SELECT home_team, away_team, home_goals, away_goals, fixture_date FROM fixtures"
-        df = pd.read_sql_query(query, conn)
+        query = "SELECT home_team, away_team, home_goals, away_goals, fixture_date FROM fixtures WHERE league = ?"
+        df = pd.read_sql_query(query, conn, params=(league,))
         conn.close()
         
         if df.empty:
-            st.warning("No fixture data available")
+            st.warning(f"No fixture data available for {league}")
             return None
         
         return df
@@ -117,9 +132,12 @@ def load_fixtures() -> Optional[pd.DataFrame]:
 
 
 @st.cache_data
-def load_player_xg() -> Optional[pd.DataFrame]:
+def load_player_xg(league: str) -> Optional[pd.DataFrame]:
     """
-    Load player xG statistics from database.
+    Load player xG statistics from database filtered by league.
+    
+    Args:
+        league: League name (e.g., 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1')
     
     Returns:
         pd.DataFrame: Player xG data with all available columns
@@ -129,12 +147,13 @@ def load_player_xg() -> Optional[pd.DataFrame]:
         conn = sqlite3.connect("pl_data.db", check_same_thread=False)
         query = """SELECT player_name, team_name, position, games, minutes, goals, 
                           assists, xg, xa, npxg, shots, key_passes, xgchain, xgbuildup
-                   FROM player_xg"""
-        df = pd.read_sql_query(query, conn)
+                   FROM player_xg
+                   WHERE league = ?"""
+        df = pd.read_sql_query(query, conn, params=(league,))
         conn.close()
         
         if df.empty:
-            st.warning("No player xG data available")
+            st.warning(f"No player xG data available for {league}")
             return None
         
         return df
@@ -148,108 +167,126 @@ def load_player_xg() -> Optional[pd.DataFrame]:
 # TAB 1: LEAGUE TABLE
 # ============================================================================
 
-def tab_league_table():
+def tab_league_table(league: str):
     """
-    Display league standings with color coding and points visualization.
+    Display league standings with FotMob-style formatting.
     
-    Color scheme:
-    - Green (Top 4): Champions League qualification
-    - Blue (5-7): Europa League qualification
-    - Orange/Yellow (8-17): Mid-table
-    - Red (18-20): Relegation zone
+    Features:
+    - Dark background
+    - Colored left border for top 4 (green) and relegation zone (red)
+    - Columns: #, Team, PL, W, D, L, +/-, GD, PTS
+    
+    Args:
+        league: League name (e.g., 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1')
     """
     st.header("📊 League Table")
     
     # Load standings data
-    standings_df = load_standings()
+    standings_df = load_standings(league)
     
     if standings_df is None or standings_df.empty:
         st.error("Unable to load standings data")
         return
     
-    # Create color coding based on position
-    def get_color(rank):
-        """Assign color based on league position."""
+    # Helper function to get border color based on position
+    def get_border_color(rank):
+        """Get left border color based on league position."""
         if rank <= 4:
-            return "rgba(76, 175, 80, 0.3)"  # Green - Champions League
-        elif rank <= 7:
-            return "rgba(33, 150, 243, 0.3)"  # Blue - Europa League
-        elif rank <= 17:
-            return "rgba(255, 193, 7, 0.2)"  # Yellow - Mid-table
+            return "#22C55E"  # Green - Champions League
+        elif rank >= len(standings_df) - 3:
+            return "#EF4444"  # Red - Relegation zone
         else:
-            return "rgba(244, 67, 54, 0.3)"  # Red - Relegation zone
+            return "#6B7280"  # Gray - Mid-table
     
-    # Display standings table with color coding
-    st.subheader("Final Standings")
+    # Create styled table display
+    st.markdown("### Final Standings")
     
-    # Create styled dataframe display
-    col1, col2 = st.columns([2, 1])
+    # Display header
+    header_html = """
+    <div style="display: grid; grid-template-columns: 30px 150px 35px 35px 35px 35px 35px 35px 35px; 
+                gap: 8px; padding: 12px; background-color: #1F2937; border-radius: 5px; margin-bottom: 5px; font-weight: bold; color: white;">
+        <div>#</div>
+        <div>Team</div>
+        <div>PL</div>
+        <div>W</div>
+        <div>D</div>
+        <div>L</div>
+        <div>+/-</div>
+        <div>GD</div>
+        <div>PTS</div>
+    </div>
+    """
+    st.markdown(header_html, unsafe_allow_html=True)
     
-    with col1:
-        # Display table with metrics
-        for idx, row in standings_df.iterrows():
-            color = get_color(row['rank'])
-            with st.container():
-                st.markdown(f"""
-                <div style="background-color: {color}; padding: 10px; border-radius: 5px; margin: 5px 0;">
-                    <b>{int(row['rank'])}. {row['team_name']}</b> - 
-                    {int(row['points'])} pts | 
-                    {int(row['won'])}W-{int(row['drawn'])}D-{int(row['lost'])}L | 
-                    GD: {int(row['goal_difference'])}
-                </div>
-                """, unsafe_allow_html=True)
+    # Display each team row
+    for idx, row in standings_df.iterrows():
+        rank = int(row['rank'])
+        team_name = row['team_name']
+        played = int(row['played'])
+        won = int(row['won'])
+        drawn = int(row['drawn'])
+        lost = int(row['lost'])
+        goals_for = int(row['goals_for'])
+        goals_against = int(row['goals_against'])
+        goal_diff = int(row['goal_difference'])
+        points = int(row['points'])
+        
+        border_color = get_border_color(rank)
+        
+        # Determine row background color (alternate for readability)
+        bg_color = "#111827" if idx % 2 == 0 else "#1F2937"
+        
+        row_html = f"""
+        <div style="display: grid; grid-template-columns: 30px 150px 35px 35px 35px 35px 35px 35px 35px;
+                    gap: 8px; padding: 12px; background-color: {bg_color}; border-left: 4px solid {border_color}; 
+                    border-radius: 3px; margin-bottom: 3px; color: white; align-items: center;">
+            <div><strong>{rank}</strong></div>
+            <div style="font-weight: 500;">{team_name}</div>
+            <div>{played}</div>
+            <div style="color: #22C55E; font-weight: bold;">{won}</div>
+            <div style="color: #9CA3AF; font-weight: bold;">{drawn}</div>
+            <div style="color: #EF4444; font-weight: bold;">{lost}</div>
+            <div>{goals_for}-{goals_against}</div>
+            <div style="font-weight: bold;">{goal_diff:+d}</div>
+            <div style="font-weight: bold; font-size: 14px;">{points}</div>
+        </div>
+        """
+        
+        st.markdown(row_html, unsafe_allow_html=True)
     
-    with col2:
-        st.metric("Leader", standings_df.iloc[0]['team_name'], standings_df.iloc[0]['points'])
-        st.metric("Relegation Zone", standings_df.iloc[-1]['team_name'], standings_df.iloc[-1]['points'])
-    
-    # Points distribution bar chart
-    st.subheader("Points Distribution by Team")
-    
-    # Create bar chart with color coding
-    fig = go.Figure()
-    
-    colors_list = [get_color(pos).replace("0.3", "1").replace("0.2", "1") for pos in standings_df['rank']]
-    
-    fig.add_trace(go.Bar(
-        x=standings_df['team_name'],
-        y=standings_df['points'],
-        marker=dict(color=colors_list),
-        text=standings_df['points'],
-        textposition='outside',
-        hovertemplate='<b>%{x}</b><br>Points: %{y}<extra></extra>'
-    ))
-    
-    fig.update_layout(
-        title="Points by Team",
-        xaxis_title="Team",
-        yaxis_title="Points",
-        height=500,
-        showlegend=False,
-        xaxis_tickangle=-45,
-        hovermode='x unified'
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
+    # Add legend
+    st.markdown("---")
+    st.markdown("""
+    **Legend:**
+    - 🟩 Green border: Champions League qualification (Top 4)
+    - 🟥 Red border: Relegation zone (Bottom 3)
+    - **PL:** Matches Played
+    - **W/D/L:** Wins/Draws/Losses (green/gray/red)
+    - **GD:** Goal Difference
+    - **PTS:** Points
+    """)
 
 
 # ============================================================================
 # TAB 2: xG ANALYSIS
 # ============================================================================
 
-def tab_xg_analysis():
+def tab_xg_analysis(league: str):
     """
     Display xG analysis: efficiency metrics and performance vs expected goals.
     
     Includes:
     - Scatter plot: xG for vs xG against (teams above diagonal overperform)
     - Bar chart: xG vs actual goals comparison
+    
+    Args:
+        league: League name (e.g., 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1')
     """
     st.header("📈 xG Analysis")
     
     # Load xG data
-    match_xg_df = load_match_xg()
-    fixtures_df = load_fixtures()
+    match_xg_df = load_match_xg(league)
+    fixtures_df = load_fixtures(league)
     
     if match_xg_df is None or fixtures_df is None:
         st.error("Unable to load xG data")
@@ -379,14 +416,17 @@ def tab_xg_analysis():
 # TAB 3: TOP SCORERS & PLAYMAKERS
 # ============================================================================
 
-def tab_top_scorers_playmakers():
+def tab_top_scorers_playmakers(league: str):
     """
     Display top scorers and playmakers with optional position filtering.
+    
+    Args:
+        league: League name (e.g., 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1')
     """
     st.header("👥 Top Scorers & Playmakers")
     
     # Load player data
-    player_df = load_player_xg()
+    player_df = load_player_xg(league)
     
     if player_df is None or player_df.empty:
         st.error("Unable to load player data")
@@ -479,16 +519,47 @@ def normalize_stats(value, min_val, max_val):
     return (value - min_val) / (max_val - min_val)
 
 
+def load_all_player_xg() -> Optional[pd.DataFrame]:
+    """
+    Load player xG statistics from database (all leagues).
+    Used for player comparison where players can be from any league.
+    
+    Returns:
+        pd.DataFrame: Player xG data with all available columns
+        None if query fails
+    """
+    try:
+        conn = sqlite3.connect("pl_data.db", check_same_thread=False)
+        query = """SELECT player_name, team_name, position, games, minutes, goals, 
+                          assists, xg, xa, npxg, shots, key_passes, xgchain, xgbuildup, league
+                   FROM player_xg"""
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        
+        if df.empty:
+            st.warning("No player xG data available")
+            return None
+        
+        return df
+    
+    except Exception as e:
+        st.error(f"Error loading player xG: {str(e)}")
+        return None
+
+
 def tab_player_comparison():
     """
     Display radar chart comparing two selected players across multiple metrics.
+    Players can be from any league.
     
     Metrics: goals, assists, xg, xa, key_passes, shots
     """
     st.header("⚔️ Player Comparison Radar")
     
-    # Load player data
-    player_df = load_player_xg()
+    st.markdown("*Compare any players from any league*")
+    
+    # Load player data from all leagues
+    player_df = load_all_player_xg()
     
     if player_df is None or player_df.empty:
         st.error("Unable to load player data")
@@ -587,51 +658,3 @@ def tab_player_comparison():
     }, index=metrics)
     
     st.dataframe(stats_comparison, use_container_width=True)
-
-
-# ============================================================================
-# MAIN APP: CREATE TABS
-# ============================================================================
-
-def main():
-    """
-    Main application function. Creates tabs and renders selected tab content.
-    """
-    # Create tabs
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "📊 League Table",
-        "📈 xG Analysis",
-        "👥 Top Scorers & Playmakers",
-        "⚔️ Player Comparison"
-    ])
-    
-    # TAB 1: League Table
-    with tab1:
-        tab_league_table()
-    
-    # TAB 2: xG Analysis
-    with tab2:
-        tab_xg_analysis()
-    
-    # TAB 3: Top Scorers & Playmakers
-    with tab3:
-        tab_top_scorers_playmakers()
-    
-    # TAB 4: Player Comparison
-    with tab4:
-        tab_player_comparison()
-    
-    # Footer
-    st.markdown("---")
-    st.markdown(
-        """
-        <div style="text-align: center; color: gray; font-size: 12px;">
-            Premier League 2024/25 Analytics Dashboard | Data from pl_data.db
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-if __name__ == "__main__":
-    main()

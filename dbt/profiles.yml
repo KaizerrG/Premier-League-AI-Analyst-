@@ -1,0 +1,9 @@
+pl_analyst:
+  target: dev
+  outputs:
+    dev:
+      type: sqlite
+      threads: 1
+      database: "main"
+      schema: "main"
+      file_path: "../pl_data.db"

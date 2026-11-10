@@ -1,0 +1,96 @@
+version: 2
+
+models:
+  - name: stg_standings
+    columns:
+      - name: standing_id
+        tests:
+          - not_null
+          - unique
+      - name: team_name
+        tests:
+          - not_null
+
+  - name: stg_fixtures
+    columns:
+      - name: fixture_id
+        tests:
+          - not_null
+          - unique
+      - name: home_team
+        tests:
+          - not_null
+      - name: away_team
+        tests:
+          - not_null
+
+  - name: stg_player_xg
+    columns:
+      - name: player_stat_id
+        tests:
+          - not_null
+          - unique
+      - name: player_name
+        tests:
+          - not_null
+      - name: team_name
+        tests:
+          - not_null
+
+  - name: stg_match_xg
+    columns:
+      - name: match_xg_id
+        tests:
+          - not_null
+          - unique
+      - name: match_id
+        tests:
+          - not_null
+
+  - name: stg_fixture_stats
+    columns:
+      - name: fixture_stats_id
+        tests:
+          - not_null
+          - unique
+      - name: fixture_id
+        tests:
+          - not_null
+      - name: team_name
+        tests:
+          - not_null
+
+  - name: stg_shots
+    columns:
+      - name: shot_id
+        tests:
+          - not_null
+          - unique
+      - name: match_id
+        tests:
+          - not_null
+
+  - name: player_performance_summary
+    columns:
+      - name: player_stat_id
+        tests:
+          - not_null
+          - unique
+      - name: player_name
+        tests:
+          - not_null
+
+  - name: team_form
+    columns:
+      - name: team_name
+        tests:
+          - not_null
+
+  - name: xg_over_under_performance
+    columns:
+      - name: entity_name
+        tests:
+          - not_null
+      - name: season
+        tests:
+          - not_null

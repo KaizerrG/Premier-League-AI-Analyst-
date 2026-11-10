@@ -8,6 +8,17 @@ from datetime import datetime
 
 load_dotenv()
 
+# ─────────────────────────────────────────
+# LEAGUE CONFIGURATION
+# ─────────────────────────────────────────
+LEAGUE_MAP = {
+    "Premier League": "Premier League",
+    "La Liga": "La Liga", 
+    "Bundesliga": "Bundesliga",
+    "Serie A": "Serie A",
+    "Ligue 1": "Ligue 1"
+}
+
 # ROCKY: page config must be first streamlit call. always.
 st.set_page_config(
     page_title="PL 2024/25 AI Analyst",
@@ -81,18 +92,16 @@ with st.sidebar:
     # ROCKY: manual refresh button
     # runs fetch scripts to update data
     if st.button("🔄 Refresh Data", use_container_width=True):
-        with st.spinner("fetching latest data..."):
+        with st.spinner("fetching latest data from Understat..."):
             try:
-                subprocess.run(["python", "fetch_data.py"], check=True)
-                subprocess.run(["python", "fetch_xg.py"], check=True)
-                subprocess.run(["python", "rag.py"], check=True)
+                subprocess.run(["python", "fetch_all.py"], check=True)
                 st.success("data updated!")
             except Exception as e:
                 st.error(f"refresh failed: {e}")
 
     st.divider()
     st.markdown("*Built with LangGraph + Groq*")
-    st.markdown("*Data: API-Football + Understat*")
+    st.markdown("*Data: Understat*")
 
 
 # ─────────────────────────────────────────
@@ -195,11 +204,21 @@ if page == "💬 AI Chat":
 # imports tab functions from visualizations.py
 # ─────────────────────────────────────────
 elif page == "📊 Analytics Dashboard":
-    st.title("📊 PL 2024/25 Analytics")
+    st.title("📊 Analytics Dashboard")
 
     if not VIZ_READY:
         st.error(f"visualizations not ready: {VIZ_ERROR}")
     else:
+        # ROCKY: League selector dropdown
+        selected_league_name = st.selectbox(
+            "Select League",
+            list(LEAGUE_MAP.keys()),
+            index=0
+        )
+        selected_league = LEAGUE_MAP[selected_league_name]
+        
+        st.divider()
+        
         # ROCKY: 4 tabs. each calls function from visualizations.py
         tab1, tab2, tab3, tab4 = st.tabs([
             "🏆 League Table",
@@ -209,13 +228,13 @@ elif page == "📊 Analytics Dashboard":
         ])
 
         with tab1:
-            tab_league_table()
+            tab_league_table(selected_league)
 
         with tab2:
-            tab_xg_analysis()
+            tab_xg_analysis(selected_league)
 
         with tab3:
-            tab_top_scorers_playmakers()
+            tab_top_scorers_playmakers(selected_league)
 
         with tab4:
             tab_player_comparison()

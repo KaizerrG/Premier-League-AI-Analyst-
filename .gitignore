@@ -1,7 +1,22 @@
+# Secrets and local environments
 .env
 .venv/
-chroma_db/
+venv/
+
+# Generated data and caches
 pl_data.db
-fetch_data.log
+*.db-shm
+*.db-wal
+chroma_db/
 __pycache__/
-*.pyc.env
+*.py[cod]
+
+# Logs and local evaluation output
+*.log
+eval_report.json
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

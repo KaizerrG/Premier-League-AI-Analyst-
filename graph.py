@@ -70,7 +70,7 @@ class PLAnalystState(TypedDict):
 
 # Initialize Groq LLM with environment API key
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-20b",
     api_key=os.getenv("GROQ_API_KEY"),
     temperature=0.7,
     timeout=30,
@@ -187,7 +187,7 @@ def player_node(state: PLAnalystState) -> PLAnalystState:
     Handle questions about player statistics.
     
     Queries tables:
-    - player_xg: Expected goals by player
+    - player_xg: Expected goals by player (now includes league column)
     - top_scorers: Top goal scorers
     
     Process:
@@ -202,7 +202,6 @@ def player_node(state: PLAnalystState) -> PLAnalystState:
         Updated state with results from player queries
     """
     try:
-        # Prompt Groq to generate SQL query with stat combination guidance
         sql_prompt = f"""You are a Premier League SQL expert.
 
 For complex concepts use these stat combinations:
@@ -214,7 +213,12 @@ For complex concepts use these stat combinations:
 
 Available columns ONLY:
 player_name, team_name, position, games, minutes, goals, 
-assists, xG, xA, npxG, shots, key_passes, xGChain, xGBuildup, yellow_cards, red_cards
+assists, xG, xA, npxG, shots, key_passes, xGChain, xGBuildup, yellow_cards, red_cards, league, season
+
+IMPORTANT LEAGUE FILTERING:
+- If user mentions a specific league (e.g., "Premier League", "La Liga", "Bundesliga", "Serie A", "Ligue 1"), ALWAYS add WHERE league = 'League Name'
+- If no league is specified in the question, search across ALL leagues
+- Always filter by league when user specifies one
 
 Write ONE SQL query that:
 1. Selects all individual stats as separate columns (for comparison)
@@ -222,17 +226,11 @@ Write ONE SQL query that:
 3. Shows which stats outweigh others by the ranking
 
 Example - for creative players order by playmaking but show all stats:
-SELECT player_name, team_name, position,
+SELECT player_name, team_name, position, league,
        xA, key_passes, assists, xGChain
 FROM player_xg
+WHERE league = 'Premier League'
 ORDER BY (xA * 0.3 + key_passes * 0.3 + assists * 0.4) DESC
-LIMIT 10
-
-Example - for strikers order by finishing but show all stats:
-SELECT player_name, team_name, position,
-       goals, npxG, shots, xG
-FROM player_xg
-ORDER BY (goals * 0.4 + npxG * 0.3 + shots * 0.3) DESC
 LIMIT 10
 
 User Question: {state['question']}
@@ -273,7 +271,7 @@ def match_node(state: PLAnalystState) -> PLAnalystState:
     
     Queries tables:
     - fixtures: Match information (teams, dates, results)
-    - match_xg: Expected goals per match
+    - match_xg: Expected goals per match (now includes league column)
     - fixture_stats: Match statistics (possession, shots, corners, etc.)
     
     Process:
@@ -299,8 +297,13 @@ For performance metrics use these stat combinations:
 
 Available columns ONLY:
 fixtures: home_team, away_team, date, goals_home, goals_away, gameweek
-match_xg: home_team, away_team, xg_home, xg_away, date
+match_xg: home_team, away_team, xg_home, xg_away, date, league
 fixture_stats: home_team, away_team, date, possession_home, shots_home, shots_away, corners_home
+
+IMPORTANT LEAGUE FILTERING:
+- If user mentions a specific league (e.g., "Premier League", "La Liga", "Bundesliga", "Serie A", "Ligue 1"), ALWAYS add WHERE league = 'League Name'
+- If no league is specified, search across all leagues
+- Always filter by league when user specifies one
 
 Combine tables with JOINs on (home_team, away_team, date).
 For rankings use weighted scoring to show dominance:
@@ -404,10 +407,10 @@ def prediction_node(state: PLAnalystState) -> PLAnalystState:
     
     Queries tables:
     - fixtures: Match data for form analysis
-    - match_xg: Expected goals for xG-based predictions
+    - match_xg: Expected goals for xG-based predictions (now includes league column)
     - fixture_stats: Match statistics
     - standings: Current standings for context
-    - player_xg: Player performance metrics
+    - player_xg: Player performance metrics (now includes league column)
     
     Key reasoning factors:
     - Team form (recent results)
@@ -439,10 +442,15 @@ For prediction concepts use these stat combinations:
 
 Available columns ONLY:
 fixtures: home_team, away_team, date, goals_home, goals_away, gameweek
-match_xg: home_team, away_team, xg_home, xg_away, date
+match_xg: home_team, away_team, xg_home, xg_away, date, league
 fixture_stats: home_team, away_team, date, possession_home, shots_home, shots_away, corners_home
 standings: position, team, wins, draws, losses, points, goal_difference
-player_xg: player_name, team_name, position, games, minutes, goals, assists, xG, xA, npxG, shots, key_passes, xGChain, xGBuildup, yellow_cards, red_cards
+player_xg: player_name, team_name, position, games, minutes, goals, assists, xG, xA, npxG, shots, key_passes, xGChain, xGBuildup, yellow_cards, red_cards, league, season
+
+IMPORTANT LEAGUE FILTERING:
+- If user mentions a specific league (e.g., "Premier League", "La Liga", "Bundesliga", "Serie A", "Ligue 1"), ALWAYS add WHERE league = 'League Name'
+- If no league is specified, search across all leagues
+- Always filter by league when user specifies one
 
 JOIN tables on dates and team names to combine form, xG, and player data.
 For predictions use weighted scoring:

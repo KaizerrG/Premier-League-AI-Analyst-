@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: raw
+    database: main
+    schema: main
+    tables:
+      - name: standings
+      - name: fixtures
+      - name: player_xg
+      - name: match_xg
+      - name: fixture_stats
+      - name: shots
